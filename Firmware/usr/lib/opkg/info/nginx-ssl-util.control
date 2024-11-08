@@ -1,0 +1,14 @@
+Package: nginx-ssl-util
+Version: 1.6-1
+Depends: nginx-util (>=1.4-2), libc, librt, libpthread, libstdcpp6, libuci20130104, libubus20210630, libubox20210516, libpthread, libopenssl1.1, nginx-util, libpcre
+Conflicts: nginx-ssl-util-nopcre
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/net/nginx-util
+SourceName: nginx-ssl-util
+Section: net
+SourceDateEpoch: 1710165425
+Maintainer: Peter Stadler <peter.stadler@student.uibk.ac.at>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 55152
+Description:  Utility that builds dynamically LAN listen directives for Nginx.
+ Furthermore, it manages SSL directives for its server parts and can create
+ corresponding (self-signed) certificates. It uses the PCRE library for performance.

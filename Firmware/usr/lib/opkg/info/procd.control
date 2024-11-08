@@ -1,0 +1,14 @@
+Package: procd
+Version: 2021-03-08-2cfc26f8-1
+Depends: libc, librt, libpthread, ubusd, ubus, libjson-script20210516, ubox, libubox20210516, libubus20210630, libblobmsg-json20210516, libjson-c5, jshn
+Conflicts: procd-selinux
+Source: package/system/procd
+SourceName: procd
+License: GPL-2.0
+Section: base
+Require-User: :dialout=20 :audio=29
+SourceDateEpoch: 1688356042
+Maintainer: John Crispin <john@phrozen.org>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 56358
+Description:  OpenWrt system process manager

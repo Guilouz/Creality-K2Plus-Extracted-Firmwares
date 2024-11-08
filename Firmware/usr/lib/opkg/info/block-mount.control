@@ -1,0 +1,12 @@
+Package: block-mount
+Version: 2023-02-28-bfe882d5-1
+Depends: libc, librt, libpthread, ubox, libubox20210516, libuci20130104, libblobmsg-json20210516, libjson-c5
+Source: package/system/fstools
+SourceName: block-mount
+License: GPL-2.0
+Section: base
+SourceDateEpoch: 1704186032
+Maintainer: John Crispin <john@phrozen.org>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 24361
+Description:  Block device mounting and checking

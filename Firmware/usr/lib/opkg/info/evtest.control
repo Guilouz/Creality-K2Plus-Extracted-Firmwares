@@ -1,0 +1,13 @@
+Package: evtest
+Version: 1.34-3
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/utils/evtest
+SourceName: evtest
+License: GPL-2.0-or-later
+LicenseFiles: COPYING
+Section: utils
+SourceDateEpoch: 1688356042
+Maintainer: Pushpal Sidhu <psidhu.devel@gmail.com>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 10479
+Description:  Utility to test event driven devices such as keyboards and mice

@@ -1,0 +1,15 @@
+Package: ota-burnboot
+Version: 0.1-0.1
+Depends: libc, librt, libpthread, libc
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/allwinner/system/ota-burnboot
+SourceName: ota-burnboot
+Section: utils
+SourceDateEpoch: 1688356042
+Architecture: arm_cortex-a7_neon
+Installed-Size: 8195
+Description:  This package is used for ota to burn boot0/uboot.
+ 
+ Contains:
+ - ota-burnboot0
+ - ota-burnuboot
+ - libota-burnboot.so

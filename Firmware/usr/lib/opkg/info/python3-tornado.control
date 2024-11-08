@@ -1,0 +1,17 @@
+Package: python3-tornado
+Version: 6.1-1
+Depends: libc, librt, libpthread, python3-asyncio, python3-codecs, python3-email, python3-light, python3-logging, python3-multiprocessing, python3-openssl, python3-unittest, python3-urllib
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/python-tornado
+SourceName: python3-tornado
+License: Apache-2.0
+LicenseFiles: LICENSE
+Section: lang
+SourceDateEpoch: 1688356042
+Maintainer: Josef Schlehofer <josef.schlehofer@nic.cz>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 498143
+Description:  Tornado is a Python web framework and asynchronous networking library,
+ originally developed at FriendFeed. By using non-blocking network I/O,
+ Tornado can scale to tens of thousands of open connections, making it
+ ideal for long polling, WebSockets, and other applications that require
+ a long-lived connection to each user.

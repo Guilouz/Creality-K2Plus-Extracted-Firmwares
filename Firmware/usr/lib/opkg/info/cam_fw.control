@@ -1,0 +1,10 @@
+Package: cam_fw
+Version: 6f9e1f9
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/cam_fw
+SourceName: cam_fw
+Section: creality
+SourceDateEpoch: 1709082834
+Architecture: arm_cortex-a7_neon
+Installed-Size: 21916
+Description:  cam_fw

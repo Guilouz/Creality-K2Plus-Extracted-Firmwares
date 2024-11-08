@@ -1,0 +1,14 @@
+Package: python3-distro
+Version: 1.5.0-3
+Depends: libc, librt, libpthread, python3-light, python3-logging
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/python-distro
+SourceName: python3-distro
+License: Apache-2.0
+LicenseFiles: LICENSE
+Section: lang
+SourceDateEpoch: 1688356042
+Maintainer: Javier Marcet <javier@marcet.info>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 15191
+Description:  A much more elaborate, renewed alternative implementation for Python's
+ platform.linux_distribution()

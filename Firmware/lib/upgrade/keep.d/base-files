@@ -1,0 +1,5 @@
+/etc/config/
+/etc/crontabs/
+/etc/dropbear/
+/etc/profile.d
+/etc/sysctl.d/

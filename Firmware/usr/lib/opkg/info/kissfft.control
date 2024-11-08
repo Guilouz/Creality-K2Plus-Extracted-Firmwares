@@ -1,0 +1,10 @@
+Package: kissfft
+Version: 8f47a67
+Depends: libc, librt, libpthread, fftw-double, libpng
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/kissfft
+SourceName: kissfft
+Section: creality
+SourceDateEpoch: 1702192833
+Architecture: arm_cortex-a7_neon
+Installed-Size: 6046
+Description:  with kissfft support

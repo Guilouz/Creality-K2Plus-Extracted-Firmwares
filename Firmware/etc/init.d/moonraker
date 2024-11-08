@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+
+START=56
+USE_PROCD=1
+DEPEND=fstab,mcu_update
+
+PROG=/usr/share/moonraker-env/bin/python
+CONF=/usr/share/moonraker/moonraker.conf
+LOG=/mnt/UDISK/printer_data/logs/moonraker.log
+
+start_service() {
+
+	[ "x$(get_sn_mac.sh pcba_test)" = "x1" ] && exit 0
+
+	procd_open_instance
+	procd_set_param env HOME=/mnt/UDISK
+	procd_set_param command ${PROG} /usr/share/moonraker/moonraker.py -c ${CONF} -l ${LOG}
+	procd_close_instance
+}
+

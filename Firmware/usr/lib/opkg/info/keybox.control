@@ -1,0 +1,10 @@
+Package: keybox
+Version: 1
+Depends: libc, librt, libpthread, optee-keybox
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/keybox
+SourceName: keybox
+Section: creality
+SourceDateEpoch: 1719035918
+Architecture: arm_cortex-a7_neon
+Installed-Size: 9882
+Description:  with keybox(read sn_mac) support

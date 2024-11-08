@@ -1,0 +1,28 @@
+
+check_laser() {
+    /usr/bin/cx_ai_crypto $1 2>&1 >/dev/null
+    if [ $? -eq 0 ]; then
+        ret=0
+    else
+        ret=1
+    fi
+    echo $ret
+}
+
+[ "$ACTION" = "add" ] && [ -n "$DEVNAME" ] && {
+    [ -z "${DEVNAME%ttyACM*}" ] && {
+        ret=$(check_laser /dev/$DEVNAME)
+        [ $ret -eq 0 ] && {
+            mkdir -p /dev/serial/by-id/
+            ln -s /dev/$DEVNAME /dev/serial/by-id/creality-laser
+            [ -x /usr/bin/laser_status.sh ] && . /usr/bin/laser_status.sh
+        }
+    }
+}
+
+[ "$ACTION" = "remove" ] && [ -n "$DEVNAME" ] && {
+    [ -z "${DEVNAME%ttyACM*}" ] && {
+        rm -f /dev/serial/by-id/creality-laser
+        [ -x /usr/bin/laser_status.sh ] && . /usr/bin/laser_status.sh
+    }
+}

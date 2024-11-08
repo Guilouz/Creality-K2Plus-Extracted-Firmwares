@@ -1,0 +1,15 @@
+Package: python3-pyserial
+Version: 3.4-2
+Depends: libc, librt, libpthread, python3-light
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/python-pyserial
+SourceName: python3-pyserial
+License: BSD
+Section: lang-python
+SourceDateEpoch: 1688356042
+Maintainer: Micke Prag <micke.prag@telldus.se>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 95015
+Description:  This module encapsulates the access for the serial port. It provides backends
+ for Python running on Windows, OSX, Linux, BSD (possibly any POSIX compliant
+ system) and IronPython. The module named "serial" automatically selects the
+ appropriate backend.

@@ -1,0 +1,14 @@
+Package: libuci20130104
+Version: 2021-04-14-4b3db117-5
+Depends: libc, librt, libpthread, libubox20210516
+Provides: libuci
+Source: package/system/uci
+SourceName: libuci
+License: LGPL-2.1
+Section: libs
+SourceDateEpoch: 1688356042
+ABIVersion: 20130104
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 15480
+Description:  C library for the Unified Configuration Interface (UCI)

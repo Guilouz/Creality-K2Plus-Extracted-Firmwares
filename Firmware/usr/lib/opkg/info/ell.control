@@ -1,0 +1,13 @@
+Package: ell
+Version: 0.16-1
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/ell
+SourceName: ell
+License: GPLv2
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1688356042
+Architecture: arm_cortex-a7_neon
+Installed-Size: 89168
+Description:  The Embedded Linux Library(ELL) provides core, low-level
+ functionality for system daemons.

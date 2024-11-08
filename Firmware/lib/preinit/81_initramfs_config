@@ -1,0 +1,66 @@
+#!/bin/sh
+
+do_initramfs_config() {
+
+	local overlay_dev="/dev/by-name/rootfs_data"
+	[ -e $overlay_dev ] || {
+		/bin/echo "$overlay_dev not exist"
+
+		local overlay_dev="/dev/by-name/UDISK"
+		[ -e $overlay_dev ] || {
+			/bin/echo "$overlay_dev not exist"
+			return
+		}
+		fix_UDISK_dir=1
+	}
+
+	local fstype="none"
+	local lnk="$(basename "$(readlink $overlay_dev)")"
+	#emmc
+	[ ${lnk:0:6} = "mmcblk" ] && fstype="ext4"
+	#nand
+	[ ${lnk:0:4} = "nand" ] && fstype="ext4"
+	#nor
+	[ ${lnk:0:8} = "mtdblock" ] && fstype="jffs2"
+	#mtd-nand
+	[ ${lnk:0:3} = "ubi" ] && fstype="ubifs"
+
+	[ x"$fstype" = x"none" ] && {
+		/bin/echo "can not recogize fstype"
+		return 1
+	}
+
+	[ x"$fstype" = x"ext4" ] && {
+		/usr/sbin/fsck.ext4 -y $overlay_dev
+	}
+
+	mkdir -p /overlay
+
+	/bin/mount -t $fstype $overlay_dev /overlay || {
+		/bin/echo "Mount $overlay_dev Failed"
+		return 1
+	}
+
+	local OVERLAYFS_UPPER_DIR="/overlay/upper"
+	# overlayfs in linux-3.4 and  linux-3.10 is v22 and before, should mount without a workdir
+	fgrep -sq 'Linux version 3' /proc/version && OVERLAYFS_UPPER_DIR="/overlay"
+
+	# sync wifi config from overlayfs(rootfs_data partition)
+	[ -e $OVERLAYFS_UPPER_DIR/etc/wifi/wpa_supplicant.conf ] && {
+		cp -fpr $OVERLAYFS_UPPER_DIR/etc/wifi/* /etc/wifi/
+	}
+
+	[ x"$fix_UDISK_dir" = x"1" ] && {
+		rm -rf /mnt/UDISK
+		ln -s $OVERLAYFS_UPPER_DIR/mnt/UDISK /mnt/UDISK
+	}
+}
+
+create_initramfs_flag() {
+	[ -f /tmp/is_initramfs ] || {
+		/bin/touch /tmp/is_initramfs
+	}
+}
+
+[ "$INITRAMFS" = "1" ] && boot_hook_add initramfs do_initramfs_config
+[ "$INITRAMFS" = "1" ] && boot_hook_add initramfs create_initramfs_flag

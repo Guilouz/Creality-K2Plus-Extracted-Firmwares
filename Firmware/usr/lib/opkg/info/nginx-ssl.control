@@ -1,0 +1,14 @@
+Package: nginx-ssl
+Version: 1.19.6-2
+Depends: nginx-ssl-util (>=1.5-1) (<2), libc, librt, libpthread, libopenssl1.1, libpthread, libpcre, nginx-ssl-util, zlib, libubus20210630, libblobmsg-json20210516, libjson-c5
+Conflicts: nginx-all-module
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/net/nginx
+SourceName: nginx-ssl
+License: 2-clause BSD-like license
+Section: net
+SourceDateEpoch: 1714190229
+CPE-ID: cpe:/a:nginx:nginx
+Maintainer: Thomas Heil <heil@terminal-consulting.de> Ansuel Smith <ansuelsmth@gmail.com>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 411187
+Description:  nginx is an HTTP and reverse proxy server, as well as a mail proxy server, written by Igor Sysoev. This variant is compiled with SSL support enabled. To enable additional module select them in the nginx default configuration menu.

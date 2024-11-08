@@ -1,0 +1,68 @@
+#!/bin/sh /etc/rc.common
+
+START=10
+USE_PROCD=1
+DEPEND=system
+
+update_hostname()
+{
+    uci set system.@system[0].hostname="$1"
+    uci commit
+    reload_config
+}
+
+set_hostname_with_model_mac()
+{
+    local mac=$(/usr/bin/get_sn_mac.sh mac 2>&1)
+    local id=${mac:0-4}
+    local model=$(/usr/bin/get_sn_mac.sh model 2>&1)
+
+    if [ "x$id" != "x" -a "x$model" != "x" ]; then
+        case $model in
+            "CR-K1")
+                model="K1"
+                ;;
+            "CR-K1 Max")
+                model="K1Max"
+                ;;
+            "F008")
+                model="K2Plus"
+                ;;
+            "F012")
+                model="K2Pro"
+                ;;
+            "F021")
+                model="K2"
+                ;;
+            *)
+                ;;
+        esac
+
+        echo "$model-$id" > /etc/hostname
+        update_hostname "$model-$id"
+        sync
+    fi
+}
+
+set_hostname()
+{
+    local conf_hostname
+    local file_hostname
+
+    /usr/bin/cmp -s /rom/etc/hostname /etc/hostname
+    if [ $? -eq 0 ]; then
+        set_hostname_with_model_mac
+    else
+        conf_hostname=$(uci get system.@system[0].hostname)
+        file_hostname=$(cat /etc/hostname)
+
+        if [ "$conf_hostname" != "$file_hostname" ]; then
+            update_hostname $file_hostname
+            sync
+        fi
+    fi
+}
+
+start_service() {
+	set_hostname
+}

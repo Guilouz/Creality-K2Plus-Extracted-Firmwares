@@ -1,0 +1,19 @@
+Package: eudev
+Version: 3.2.9-1
+Depends: libc, librt, libpthread, librt
+Conflicts: udev
+Provides: udev
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/utils/eudev
+SourceName: eudev
+License: GPL-2.0
+Section: base
+SourceDateEpoch: 1716456050
+Maintainer: Daniel Golle <daniel@makrotopia.org>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 262448
+Description:  udev allows Linux users to have a dynamic /dev directory and it
+ provides the ability to have persistent device names.
+ eudev is a fork of systemd-udev with the goal of obtaining better
+ compatibility with existing software such as OpenRC and Upstart, older
+ kernels, various toolchains and anything else required by users and
+ various distributions.

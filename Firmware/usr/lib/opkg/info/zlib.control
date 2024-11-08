@@ -1,0 +1,14 @@
+Package: zlib
+Version: 1.2.11-4
+Depends: libc, librt, libpthread
+Source: package/libs/zlib
+SourceName: zlib
+License: Zlib
+LicenseFiles: README
+Section: libs
+SourceDateEpoch: 1688356042
+CPE-ID: cpe:/a:gnu:zlib
+Architecture: arm_cortex-a7_neon
+Installed-Size: 41838
+Description:  zlib is a lossless data-compression library.
+ This package includes the shared library.

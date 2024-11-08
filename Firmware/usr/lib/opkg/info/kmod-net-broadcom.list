@@ -1,0 +1,3 @@
+/etc/modules-boot.d/net-broadcom
+/etc/modules.d/net-broadcom
+/lib/modules/5.4.61/bcmdhd.ko

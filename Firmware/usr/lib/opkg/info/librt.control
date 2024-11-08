@@ -1,0 +1,14 @@
+Package: librt
+Version: -3
+Depends: libpthread
+Source: package/libs/toolchain
+SourceName: librt
+License: GPL-3.0-with-GCC-exception
+Section: libs
+SourceDateEpoch: 1688356042
+Status: unknown hold not-installed
+Essential: yes
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 11186
+Description:  POSIX.1b RealTime extension library

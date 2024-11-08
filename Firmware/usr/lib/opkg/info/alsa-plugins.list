@@ -1,0 +1,11 @@
+/usr/lib/alsa-lib/libasound_module_pcm_vdownmix.so
+/usr/lib/alsa-lib/libasound_module_rate_samplerate_order.so
+/usr/lib/alsa-lib/libasound_module_pcm_speex.so
+/usr/lib/alsa-lib/libasound_module_rate_samplerate_best.so
+/usr/lib/alsa-lib/libasound_module_rate_samplerate.so
+/usr/lib/alsa-lib/libasound_module_rate_speexrate.so
+/usr/lib/alsa-lib/libasound_module_rate_speexrate_medium.so
+/usr/lib/alsa-lib/libasound_module_pcm_upmix.so
+/usr/lib/alsa-lib/libasound_module_rate_samplerate_linear.so
+/usr/lib/alsa-lib/libasound_module_rate_samplerate_medium.so
+/usr/lib/alsa-lib/libasound_module_rate_speexrate_best.so

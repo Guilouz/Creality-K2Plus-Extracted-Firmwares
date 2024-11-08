@@ -1,0 +1,9 @@
+/etc/wifi/udhcpc_p2p-wlan0-0
+/etc/wifi/wpa_supplicant/wpa_supplicant_p2p.conf
+/etc/wifi/wifi_monitor.conf
+/etc/wifi/wpa_supplicant/wpa_supplicant.conf
+/etc/wifi/wifimg.config
+/etc/wifi/udhcpc_wlan0
+/etc/wifi/wpa_supplicant/wpa_supplicant_overlay.conf
+/etc/wifi/wpa_supplicant/wpa_supplicant_src.conf
+/etc/wifi/hostapd/hostapd.conf

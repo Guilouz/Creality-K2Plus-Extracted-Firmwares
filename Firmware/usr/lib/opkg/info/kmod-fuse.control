@@ -1,0 +1,11 @@
+Package: kmod-fuse
+Version: 5.4.182-1
+Depends: kernel (=5.4.182-1-unknown)
+Source: package/kernel/linux
+SourceName: kmod-fuse
+License: GPL-2.0
+Section: kernel
+SourceDateEpoch: 1688356042
+Architecture: arm_cortex-a7_neon
+Installed-Size: 185
+Description:  Kernel module for userspace filesystem support

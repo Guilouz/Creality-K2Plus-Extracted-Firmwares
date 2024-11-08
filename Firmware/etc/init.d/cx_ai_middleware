@@ -1,0 +1,25 @@
+#!/bin/sh /etc/rc.common
+
+START=70
+STOP=90
+USE_PROCD=1
+DEPEND=fstab
+
+PROG=/usr/bin/cx_ai_middleware
+FLAG_FILE=/tmp/.laser_updating
+
+start_service() {
+
+    while true
+    do
+        if [ -e $FLAG_FILE ]; then
+            sleep 0.2
+        else
+            break
+        fi
+    done
+
+    procd_open_instance
+    procd_set_param command $PROG
+    procd_close_instance
+}

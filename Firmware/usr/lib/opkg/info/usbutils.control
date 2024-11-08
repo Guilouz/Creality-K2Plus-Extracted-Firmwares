@@ -1,0 +1,13 @@
+Package: usbutils
+Version: 013-2
+Depends: libc, librt, libpthread, libusb-1.0-0, eudev, usbids, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/utils/usbutils
+SourceName: usbutils
+License: GPL-2.0-only
+LicenseFiles: COPYING
+Section: utils
+SourceDateEpoch: 1711073867
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 54029
+Description:  USB devices listing utilities

@@ -1,0 +1,5 @@
+/sbin/swupdate
+/sbin/swupdate_cmd.sh
+/etc/init.d/S99swupdate_autorun
+/sbin/swupdate-progress
+/sbin/swupdate-client

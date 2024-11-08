@@ -1,0 +1,13 @@
+{
+  "CFSs":[
+    {
+      "boot_ver":"cfs0_050_G30",
+      "app_ver":"cfs0_000_108"
+    },
+    {
+      "boot_ver":"cfs0_050_G32",
+      "app_ver":"cfs0_000_108"
+    }
+  ]
+}
+

@@ -1,0 +1,2 @@
+/etc/modules-boot.d/20-sunxi-g2d
+/etc/modules.d/20-sunxi-g2d

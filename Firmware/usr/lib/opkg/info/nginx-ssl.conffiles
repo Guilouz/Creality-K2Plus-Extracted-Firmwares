@@ -1,0 +1,8 @@
+/etc/nginx/win-utf
+/etc/nginx/fastcgi_params
+/etc/nginx/koi-win
+/etc/nginx/uwsgi_params
+/etc/nginx/nginx.conf
+/etc/nginx/naxsi_core.rules
+/etc/nginx/mime.types
+/etc/nginx/koi-utf

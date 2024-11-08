@@ -1,0 +1,14 @@
+Package: libbsd0
+Version: 0.10.0-1
+Depends: libc, librt, libpthread
+Provides: libbsd
+Source: package/libs/libbsd
+SourceName: libbsd
+License: BSD-4-Clause
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1688356042
+ABIVersion: 0
+Architecture: arm_cortex-a7_neon
+Installed-Size: 36989
+Description:  This library provides useful functions commonly found on BSD systems, and lacking on others like GNU systems, thus making it easier to port projects with strong BSD origins, without needing to embed the same code over and over again on each project.

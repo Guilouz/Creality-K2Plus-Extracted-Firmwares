@@ -1,0 +1,11 @@
+/etc/nginx/nginx.conf
+/etc/nginx/fastcgi_params
+/etc/nginx/naxsi_core.rules
+/etc/nginx/uwsgi_params
+/etc/nginx/koi-win
+/etc/nginx/win-utf
+/usr/sbin/nginx
+/lib/upgrade/keep.d/nginx-ssl
+/etc/nginx/koi-utf
+/etc/init.d/nginx
+/etc/nginx/mime.types

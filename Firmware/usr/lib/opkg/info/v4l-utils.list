@@ -1,0 +1,8 @@
+/usr/bin/v4l2-sysfs-path
+/usr/bin/ivtv-ctl
+/usr/bin/ir-keytable
+/etc/rc_maps.cfg
+/usr/bin/v4l2-ctl
+/usr/bin/decode_tm6000
+/usr/bin/v4l2-compliance
+/usr/bin/cx18-ctl

@@ -1,0 +1,3 @@
+/sbin/ota-burnboot0
+/sbin/ota-burnuboot
+/lib/libota-burnboot.so

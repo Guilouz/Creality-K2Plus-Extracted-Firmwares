@@ -1,0 +1,13 @@
+Package: python3-pynacl
+Version: 1.4.0-6
+Depends: libc, librt, libpthread, libsodium, python3-light, python3-cffi, python3-six
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/python-pynacl
+SourceName: python3-pynacl
+License: Apache-2.0
+LicenseFiles: LICENSE
+Section: lang
+SourceDateEpoch: 1688356042
+Maintainer: Javier Marcet <javier@marcet.info>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 73314
+Description:  PyNaCl is a Python binding to libsodium, which is a fork of the Networking and Cryptography library.

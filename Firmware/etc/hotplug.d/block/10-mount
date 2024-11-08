@@ -1,0 +1,87 @@
+mount_ntfs() {
+    case "${DEVNAME}" in
+        sda*)
+            mkdir -p /mnt/exUDISK
+            /usr/bin/ntfs-3g /dev/${DEVNAME} /mnt/exUDISK -o rw,noatime,nodiratime,nosuid,nodev
+            if [ $? -eq 0 ]; then
+                [ -x /usr/bin/ubus_call ] && ubus_call udisk set_state 1 "/mnt/exUDISK"
+            fi
+            exit
+            ;;
+        mmcblk*)
+            mkdir -p /mnt/SDCARD
+            /usr/bin/ntfs-3g /dev/${DEVNAME} /mnt/SDCARD -o rw,noatime,nodiratime,nosuid,nodev
+            exit
+            ;;
+        *)
+            ;;
+    esac
+}
+
+mount_exfat() {
+    case "${DEVNAME}" in
+        sda*)
+            mkdir -p /mnt/exUDISK
+            /bin/mount -t exfat -o utf8 /dev/${DEVNAME} /mnt/exUDISK
+            if [ $? -eq 0 ]; then
+                [ -x /usr/bin/ubus_call ] && ubus_call udisk set_state 1 "/mnt/exUDISK"
+            fi
+            exit
+            ;;
+        mmcblk*)
+            mkdir -p /mnt/SDCARD
+            /bin/mount -t exfat -o utf8 /dev/${DEVNAME} /mnt/SDCARD
+            exit
+            ;;
+        *)
+            ;;
+    esac
+}
+
+/sbin/block hotplug || {
+    if [ -n "${DEVNAME}" ] && [ "${ACTION}" = "add" ]; then
+        [ -f "/etc/config/fstab" ] && {
+            grep "option.*device.*${DEVNAME}" /etc/config/fstab &>/dev/null && {
+                if [ -x "/usr/bin/ntfs-3g" -a -x "/usr/bin/ntfs-3g.probe" ]; then
+                    /usr/bin/ntfs-3g.probe --readwrite /dev/${DEVNAME} &>/dev/null
+                    case $? in
+                        0)
+                            mount_ntfs
+                            ;;
+                        12)
+                            echo "${DEVNAME} doesn't have a NTFS filesystem"
+                            ;;
+                        16)
+                            echo "The volume is already exclusively opened and in use by a kernel driver or software."
+                            break;
+                            ;;
+                        *)
+                            echo "Something wrong on file system of ${DEVNAME}. Fixing. Please wait for a few seconds"
+                            [ -x "/usr/bin/ntfsfix" ] && /usr/bin/ntfsfix /dev/${DEVNAME}
+                            mount_ntfs
+                            ;;
+                    esac
+                fi
+            }
+        }
+    fi
+}
+
+if [ -n "${DEVNAME}" ] && [ "${ACTION}" = "add" ]; then
+    [ -f "/etc/config/fstab" ] && {
+        grep "option.*device.*${DEVNAME}" /etc/config/fstab &>/dev/null && {
+	    sleep 0.2
+	    if [ "${DEVNAME}" = "sda" ] && [ -e /dev/sda1 ]; then
+	        exit
+	    fi
+	    ls -l /dev/${DEVNAME}p* &>/dev/null
+	    if [ $? -eq 0 ]; then
+		exit
+	    fi
+	    mount | grep -Fw "${DEVNAME}"
+	    if [ $? -ne 0   ]; then
+	        mount_exfat
+	    fi
+	}
+    }
+fi

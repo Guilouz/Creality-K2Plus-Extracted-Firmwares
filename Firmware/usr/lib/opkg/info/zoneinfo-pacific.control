@@ -1,0 +1,12 @@
+Package: zoneinfo-pacific
+Version: 2021a-1
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/utils/zoneinfo
+SourceName: zoneinfo-pacific
+License: Public Domain
+Section: utils
+SourceDateEpoch: 1709197168
+Maintainer: Vladimir Ulrich <admin@evl.su>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 7313
+Description:  Zone Information (Pacific)

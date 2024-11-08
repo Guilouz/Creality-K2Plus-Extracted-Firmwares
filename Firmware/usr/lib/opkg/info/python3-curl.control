@@ -1,0 +1,13 @@
+Package: python3-curl
+Version: 7.43.0.6-1
+Depends: libc, librt, libpthread, libcurl4, python3
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/python-curl
+SourceName: python3-curl
+License: LGPL-2.1
+LicenseFiles: COPYING-LGPL
+Section: lang
+SourceDateEpoch: 1688356042
+Maintainer: Waldemar Konik <informatyk74@interia.pl>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 50250
+Description:  PycURL is a Python interface to libcurl, the multiprotocol file transfer library.

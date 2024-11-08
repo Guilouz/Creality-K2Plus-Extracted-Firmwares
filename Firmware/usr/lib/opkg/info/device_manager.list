@@ -1,0 +1,5 @@
+/etc/init.d/refresh_device_status
+/usr/bin/device_query
+/etc/init.d/device_manager
+/usr/bin/device_manager
+/usr/bin/ubus_call

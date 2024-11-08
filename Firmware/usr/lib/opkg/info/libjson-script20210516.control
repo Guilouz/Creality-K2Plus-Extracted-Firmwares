@@ -1,0 +1,14 @@
+Package: libjson-script20210516
+Version: 2021-05-16-b14c4688-2
+Depends: libc, librt, libpthread, libubox20210516
+Provides: libjson-script
+Source: package/libs/libubox
+SourceName: libjson-script
+License: ISC
+Section: utils
+SourceDateEpoch: 1688356042
+ABIVersion: 20210516
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 4815
+Description:  Minimalistic JSON based scripting engine

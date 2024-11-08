@@ -1,0 +1,14 @@
+Package: libdb47
+Version: 4.7.25.4.NC-5
+Depends: libc, librt, libpthread, libxml2
+Provides: libdb47-full
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/db47
+SourceName: libdb47
+License: Sleepycat
+LicenseFiles: LICENSE
+Section: libs
+SourceDateEpoch: 1688356042
+Maintainer: Marcel Denia <naoir@gmx.net>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 459757
+Description:  Berkeley DB library (4.7).

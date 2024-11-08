@@ -1,0 +1,56 @@
+[ "$ACTION" = "bind" ] && [ "$INTERFACE" = "14/1/0" ] && {
+
+    mkdir -p /dev/v4l/by-id
+    model=$(get_sn_mac.sh model)
+
+    [ -d /sys/$DEVPATH/video4linux ] && {
+        videos=$(ls /sys/$DEVPATH/video4linux)
+        if [ "$model" = "CR-K1 Max" ]; then
+            for node in $videos
+            do
+                [ $(v4l2-ctl -d /dev/$node --list-framesizes H264 2>&1 | wc -l) -gt 1 ] && {
+                    logger -t uvc "$node support H264 format!"
+                    ln -s /dev/$node /dev/v4l/by-id/main-$node
+                    echo /dev/v4l/by-id/main-$node > /tmp/.video_$DEVICENAME
+                    MDEV=main-$node ACTION=add /usr/bin/auto_uvc.sh
+                }
+            done
+        else
+            # OTG USB, for chamber camera only!
+            if [ "$DEVICENAME" = "3-1:1.0" ]; then
+                for node in $videos
+                do
+                    [ $(v4l2-ctl -d /dev/$node --list-framesizes H264 2>&1 | wc -l) -gt 1 ] && {
+                        logger -t uvc "$node support H264 format!"
+                        ln -s /dev/$node /dev/v4l/by-id/main-$node
+                        echo /dev/v4l/by-id/main-$node > /tmp/.video_$DEVICENAME
+                        MDEV=main-$node ACTION=add /usr/bin/auto_uvc.sh
+                    }
+                done
+            else
+            # USB HUB port, for nozzle camera only!
+                for node in $videos
+                do
+                    [ $(v4l2-ctl -d /dev/$node --list-framesizes MJPG 2>&1 | wc -l) -gt 1 ] && {
+                        logger -t uvc "$node support MJPG format!"
+                        ln -s /dev/$node /dev/v4l/by-id/sub-$node
+                        echo /dev/v4l/by-id/sub-$node > /tmp/.video_$DEVICENAME
+                        MDEV=sub-$node ACTION=add /usr/bin/auto_uvc.sh
+                    }
+                done
+            fi
+        fi
+    }
+}
+
+[ "$ACTION" = "unbind" ] && [ "$INTERFACE" = "14/1/0" ] && {
+
+    [ -f /tmp/.video_$DEVICENAME ] && {
+        node_path=$(cat /tmp/.video_$DEVICENAME)
+        MDEV=${node_path##*/} ACTION=remove /usr/bin/auto_uvc.sh
+        logger -t uvc "remove soft link: $node_path"
+        rm -f $node_path
+        rm -f /tmp/.video_$DEVICENAME
+    }
+}
+

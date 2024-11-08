@@ -1,0 +1,11 @@
+[ ifup = "$ACTION" ] && {
+	uci_toggle_state network "$INTERFACE" up 1
+	[ -n "$DEVICE" ] && {
+		uci_toggle_state network "$INTERFACE" ifname "$DEVICE"
+		[ "$DEVICE" = "eth0" ] && ubus call ethernet set_state '{"plugged": 1}'
+	}
+}
+
+[ ifdown = "$ACTION" ] && {
+	[ "$INTERFACE" = "lan" ] && ubus call ethernet set_state '{"plugged": 0}'
+}

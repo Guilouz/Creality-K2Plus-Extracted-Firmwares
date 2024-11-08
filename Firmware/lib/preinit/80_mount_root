@@ -1,0 +1,95 @@
+# Copyright (C) 2006 OpenWrt.org
+# Copyright (C) 2010 Vertical Communications
+
+missing_lines() {
+	local file1 file2 line
+	file1="$1"
+	file2="$2"
+	oIFS="$IFS"
+	IFS=":"
+	while read line; do
+		set -- $line
+		grep -q "^$1:" "$file2" || echo "$*"
+	done < "$file1"
+	IFS="$oIFS"
+}
+
+mount_UDISK_and_overlayfs() {
+	UDISK_partition=/dev/by-name/UDISK
+
+	type resize2fs > /dev/null
+	if [ $? -eq 0 ]; then
+		resize2fs $UDISK_partition
+	fi
+	#First try to mount and unmount the filesystem.  We do this because
+	#the kernel is more efficient than e2fsck in running the journal and
+	#processing orphaned inodes, and on at least one device with a
+	#performance issue in the firmware, it can take e2fsck 2.5 minutes
+	#to do what the kernel does in about a second.
+	#
+	#After mounting and unmounting the filesystem, run e2fsck, and if an
+	#error is recorded in the filesystem superblock, e2fsck will do a full
+	#check.  Otherwise, it does nothing.  If the kernel cannot mount the
+	#filesytsem due to an error, e2fsck is still run to do a full check
+	#fix the filesystem.
+	mount -t ext4 $UDISK_partition /mnt/UDISK
+	umount /mnt/UDISK
+
+	#for ext4
+	e2fsck -y $UDISK_partition
+	#mount data
+	mount -t ext4 $UDISK_partition /mnt/UDISK
+	#mount overlay if kernel support overlayfs
+	grep -q overlay /proc/filesystems && {
+
+		# First, try to mount without a workdir, for overlayfs v22 and before.
+		# If it fails, it means that we are probably using a v23 and
+		# later versions that require a workdir
+		# mount -n -t overlay overlayfs:/overlay -o rw,noatime,lowerdir=/,upperdir=/overlay /mnt || {
+			# mkdir -p /overlay/upper /overlay/workdir
+			# mount -n -t overlay overlayfs:/overlay -o rw,noatime,lowerdir=/,upperdir=/overlay/upper,workdir=/overlay/workdir /mnt
+		# }
+
+		local overlay_need_workdir=1
+		# overlayfs in linux-3.4 and  linux-3.10 is v22 and before, should mount without a workdir
+		fgrep -sq 'Linux version 3' /proc/version && overlay_need_workdir=0
+
+		mkdir -p /mnt/UDISK/overlay
+		if [ x"$overlay_need_workdir" = x"0" ]; then
+			mount -n -t overlayfs overlayfs:/mnt/UDISK/overlay -o rw,noatime,lowerdir=/,upperdir=/mnt/UDISK/overlay /mnt
+		else
+			mkdir -p /mnt/UDISK/overlay/upper /mnt/UDISK/overlay/workdir
+			mount -n -t overlay overlayfs:/mnt/UDISK/overlay -o rw,noatime,lowerdir=/,upperdir=/mnt/UDISK/overlay/upper,workdir=/mnt/UDISK/overlay/workdir /mnt
+		fi
+
+		mount -n /proc -o noatime,move /mnt/proc
+		pivot_root /mnt /mnt/rom
+		mount -n /rom/mnt/UDISK -o noatime,move /mnt/UDISK
+		mount -n /rom/dev -o noatime,move /dev
+		mount -n /rom/tmp -o noatime,move /tmp
+		mount -n /rom/sys -o noatime,move /sys
+	}
+	rm -rf /overlay
+}
+
+do_mount_root() {
+	mount_root
+
+	local overlay_mount_by_UDISK=0
+	if [ x"$overlay_mount_by_UDISK" = x"1" ]; then
+		mount_UDISK_and_overlayfs
+	fi
+
+	boot_run_hook preinit_mount_root
+	[ -f /sysupgrade.tgz ] && {
+		echo "- config restore -"
+		cp /etc/passwd /etc/group /etc/shadow /tmp
+		cd /
+		mv sysupgrade.tgz /tmp
+		tar xzf /tmp/sysupgrade.tgz
+		rm -f /tmp/sysupgrade.tgz
+		sync
+	}
+}
+
+[ "$INITRAMFS" = "1" ] || boot_hook_add preinit_main do_mount_root

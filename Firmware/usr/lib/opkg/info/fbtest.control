@@ -1,0 +1,10 @@
+Package: fbtest
+Version: 1
+Depends: libc, librt, libpthread
+Source: package/utils/fbtest
+SourceName: fbtest
+Section: utils
+SourceDateEpoch: 1688356042
+Architecture: arm_cortex-a7_neon
+Installed-Size: 4196
+Description:  Frame buffer device testing tool

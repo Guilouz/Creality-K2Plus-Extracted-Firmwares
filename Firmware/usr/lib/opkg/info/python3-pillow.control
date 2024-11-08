@@ -1,0 +1,14 @@
+Package: python3-pillow
+Version: 8.2.0-1
+Depends: libc, librt, libpthread, libfreetype, libjpeg, libtiff5, zlib, python3
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/pillow
+SourceName: python3-pillow
+License: HPND
+LicenseFiles: LICENSE
+Section: lang
+SourceDateEpoch: 1688356042
+CPE-ID: cpe:/a:python:pillow
+Maintainer: Alexandru Ardelean <ardeleanalex@gmail.com>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 449489
+Description:  The friendly PIL fork

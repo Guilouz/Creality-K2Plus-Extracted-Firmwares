@@ -1,0 +1,16 @@
+Package: libmad
+Version: 0.15.1b-3
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/libmad
+SourceName: libmad
+License: GPLv2
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1688356042
+Maintainer: Ted Hess <thess@kitschensync.net>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 58975
+Description:  MAD is a high-quality MPEG audio decoder. It currently supports
+ MPEG-1 and the MPEG-2 extension to lower sampling frequencies,
+ as well as the de facto MPEG 2.5 format. All three audio layers -
+ Layer I, Layer II, and Layer III (i.e. MP3) - are fully implemented.

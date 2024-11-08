@@ -1,0 +1,12 @@
+Package: librpmsg
+Version: 1.2.0-1
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/allwinner/common/rpmsg
+SourceName: librpmsg
+Section: allwinner
+SourceDateEpoch: 1688356042
+Architecture: arm_cortex-a7_neon
+Installed-Size: 2241
+Description:  rpmsg (Remote Processor Message) framework library provides mechanisms to
+ allocate buffers and transmit/receive their references to/from remote
+ processor.

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+[ -n "${IPKG_INSTROOT}" ] && exit 0
+[ "${PKG_UPGRADE}" = "1" ] && exit 0
+case "$(/sbin/uci get "nginx.global.uci_enable" 2>/dev/null)" in
+	1|on|true|yes|enabled) ;;
+	*) exit 0;;
+esac
+
+eval "$(/usr/bin/nginx-util get_env)" &&
+[ "$(/sbin/uci get "nginx.${LAN_NAME}.${MANAGE_SSL}" 2>/dev/null)" = "self-signed" ] &&
+cd "/etc/nginx" &&
+rm -f "$(/sbin/uci get "nginx.${LAN_NAME}.ssl_certificate")" "$(/sbin/uci get "nginx.${LAN_NAME}.ssl_certificate_key")"
+
+exit 0

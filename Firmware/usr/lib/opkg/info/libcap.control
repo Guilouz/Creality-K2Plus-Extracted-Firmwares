@@ -1,0 +1,13 @@
+Package: libcap
+Version: 2.27-1
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/libcap
+SourceName: libcap
+License: GPL-2.0
+LicenseFiles: License
+Section: libs
+SourceDateEpoch: 1709125077
+Maintainer: Paul Wassi <p.wassi@gmx.at>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 6474
+Description:  Linux capabilities library

@@ -1,0 +1,12 @@
+Package: jsonfilter
+Version: 2018-02-04-c7e938d6-1
+Depends: libc, librt, libpthread, libubox20210516, libjson-c5
+Source: package/utils/jsonfilter
+SourceName: jsonfilter
+License: ISC
+Section: base
+SourceDateEpoch: 1688356042
+Maintainer: Jo-Philipp Wich <jo@mein.io>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 9616
+Description:  OpenWrt JSON filter utility

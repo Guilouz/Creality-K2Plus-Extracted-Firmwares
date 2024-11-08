@@ -1,0 +1,4 @@
+/etc/capabilities/wpad.json
+/usr/share/acl.d/wpad_acl.json
+/lib/netifd/hostapd.sh
+/etc/rc.button/wps

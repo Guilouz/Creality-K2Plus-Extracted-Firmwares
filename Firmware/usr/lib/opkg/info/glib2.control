@@ -1,0 +1,14 @@
+Package: glib2
+Version: 2.66.4-1
+Depends: libc, librt, libpthread, zlib, libpthread, libffi, libattr
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/glib2
+SourceName: glib2
+License: LGPL-2.1-or-later
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1688356042
+CPE-ID: cpe:/a:gnome:glib
+Maintainer: Peter Wagner <tripolar@gmx.at>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 927438
+Description:  The GLib library of C routines

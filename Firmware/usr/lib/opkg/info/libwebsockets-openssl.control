@@ -1,0 +1,14 @@
+Package: libwebsockets-openssl
+Version: 4.3.2-2
+Depends: libc, librt, libpthread, zlib, libcap, libopenssl1.1
+Provides: libwebsockets
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/libwebsockets
+SourceName: libwebsockets-openssl
+License: LGPL-2.1+exception
+LicenseFiles: LICENSE
+Section: libs
+SourceDateEpoch: 1709125077
+Maintainer: Karl Palsson <karlp@etactica.com>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 147024
+Description:  libwebsockets (OpenSSL)

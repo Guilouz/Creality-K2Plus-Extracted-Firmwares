@@ -1,0 +1,12 @@
+Package: uboot-envtools
+Version: 2021.01-1
+Depends: libc, librt, libpthread
+Source: package/boot/uboot-envtools
+SourceName: uboot-envtools
+License: GPL-2.0 GPL-2.0+
+LicenseFiles: Licenses/README
+Section: utils
+SourceDateEpoch: 1688356042
+Architecture: arm_cortex-a7_neon
+Installed-Size: 14467
+Description:  This package includes tools to read and modify U-Boot bootloader environment.

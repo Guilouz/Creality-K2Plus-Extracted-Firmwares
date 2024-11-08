@@ -1,0 +1,12 @@
+Package: jq
+Version: 1.6-1
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/utils/jq
+SourceName: jq
+License: BSD
+Section: utils
+SourceDateEpoch: 1688356042
+Maintainer: Marko Ratkaj <marko.ratkaj@sartura.hr>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 109114
+Description:  Lightweight and flexible command-line JSON processor.

@@ -1,0 +1,16 @@
+Package: libjson-c5
+Version: 0.15-2
+Depends: libc, librt, libpthread
+Provides: libjson-c
+Source: package/libs/libjson-c
+SourceName: libjson-c
+License: MIT
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1688356042
+ABIVersion: 5
+CPE-ID: cpe:/a:json-c_project:json-c
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 23410
+Description:  This package contains a library for javascript object notation backends.

@@ -1,0 +1,15 @@
+Package: libsndfile
+Version: 1.0.28-1
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/libsndfile
+SourceName: libsndfile
+License: LGPL
+Section: libs
+SourceDateEpoch: 1688356042
+Maintainer: Erik de Castro Lopo <erikd@mega-nerd.com>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 154301
+Description:  libsndfile is a widely used C library written by Erik de Castro Lopo for
+ reading and writing audio files. It supports a wide variety of audio file formats
+ and will convert automatically from one to another.
+ It allows the programmer to ignore many details, such as endianness.

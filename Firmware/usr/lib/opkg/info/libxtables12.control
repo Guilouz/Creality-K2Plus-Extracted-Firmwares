@@ -1,0 +1,14 @@
+Package: libxtables12
+Version: 1.8.7-1
+Depends: libc, librt, libpthread
+Provides: libxtables
+Source: package/network/utils/iptables
+SourceName: libxtables
+License: GPL-2.0
+Section: libs
+SourceDateEpoch: 1688356042
+ABIVersion: 12
+CPE-ID: cpe:/a:netfilter_core_team:iptables
+Architecture: arm_cortex-a7_neon
+Installed-Size: 99105
+Description:  IPv4/IPv6 firewall - shared xtables library

@@ -1,0 +1,25 @@
+#!/bin/sh /etc/rc.common
+
+START=16
+USE_PROCD=1
+DEPEND=device_manager
+
+refresh_udisk_status() {
+    grep -sq /mnt/exUDISK /proc/mounts && {
+        [ -x /usr/bin/ubus_call ] && ubus_call udisk set_state 1 "/mnt/exUDISK"
+    }
+}
+
+FLAG_FILE=/tmp/.laser_updating
+LINK_FILE=/dev/serial/by-id/creality-laser
+
+refresh_laser_status() {
+    [ -e $FLAG_FILE ] || {
+        [ -e $LINK_FILE ] && ubus call laser set_state '{"laser_plugged": 1}'
+    }
+}
+
+start_service() {
+    refresh_udisk_status
+    refresh_laser_status
+}

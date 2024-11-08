@@ -1,0 +1,7 @@
+/etc/hotplug.d/tty/60-laser
+/usr/bin/laser_status.sh
+/usr/bin/cx_ai_crypto
+/etc/init.d/cx_ai_middleware
+/usr/bin/laser_ota_util
+/usr/bin/lidarCalib
+/usr/bin/cx_ai_middleware

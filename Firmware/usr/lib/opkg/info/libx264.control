@@ -1,0 +1,14 @@
+Package: libx264
+Version: 2020-10-26-1
+Depends: libc, librt, libpthread, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/libx264
+SourceName: libx264
+License: GPL-2.0-or-later
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1688356042
+Maintainer: Adrian Panella <ianchi74@outlook.com>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 823002
+Description:  x264 is a free software library for encoding
+ video streams into the H.264/MPEG-4 AVC compression format.

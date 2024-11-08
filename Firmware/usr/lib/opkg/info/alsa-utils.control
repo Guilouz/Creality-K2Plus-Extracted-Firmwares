@@ -1,0 +1,13 @@
+Package: alsa-utils
+Version: 1.2.4-1
+Depends: libc, librt, libpthread, alsa-lib, libncursesw6, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/sound/alsa-utils
+SourceName: alsa-utils
+License: GPL-2.0-or-later
+LicenseFiles: COPYING
+Section: sound
+SourceDateEpoch: 1688356042
+Maintainer: Ted Hess <thess@kitschensync.net>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 130531
+Description:  ALSA (Advanced Linux Sound Architecture) utilities

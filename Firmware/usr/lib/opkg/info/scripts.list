@@ -1,0 +1,15 @@
+/usr/res/480_800/edge_480x800.jpg
+/usr/res/480_800/checkerboard_480x800.jpg
+/usr/bin/report.sh
+/usr/bin/timezone.sh
+/usr/bin/log_main
+/usr/res/480_800/white_480x800.jpg
+/usr/bin/clear_sn_mac.sh
+/usr/bin/get_sn_mac.sh
+/usr/res/480_800/grayscale_480x800.jpg
+/usr/bin/screen.sh
+/usr/bin/error_code
+/usr/bin/brightness.sh
+/usr/res/480_800/color_480x800.jpg
+/usr/bin/pack_jpg
+/usr/bin/factory_stress_test.sh

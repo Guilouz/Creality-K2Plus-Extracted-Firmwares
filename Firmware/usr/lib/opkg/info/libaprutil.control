@@ -1,0 +1,14 @@
+Package: libaprutil
+Version: 1.6.1-7
+Depends: libc, librt, libpthread, libapr, libexpat, libuuid1
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/apr-util
+SourceName: libaprutil
+License: Apache-2.0
+LicenseFiles: LICENSE
+Section: libs
+SourceDateEpoch: 1688356042
+CPE-ID: cpe:/a:apache:apr-util
+Maintainer: Thomas Heil <heil@terminal-consulting.de>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 65080
+Description:  Apache Portable Runtime Utility Library

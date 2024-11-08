@@ -1,0 +1,15 @@
+Package: python3-pycparser
+Version: 2.20-5
+Depends: libc, librt, libpthread, python3-light, python3-ply
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/python-pycparser
+SourceName: python3-pycparser
+License: BSD-3-Clause
+LicenseFiles: LICENSE
+Section: lang
+SourceDateEpoch: 1688356042
+Maintainer: Jeffery To <jeffery.to@gmail.com>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 74512
+Description:  pycparser is a parser for the C language, written in pure Python. It is a
+ module designed to be easily integrated into applications that need to parse
+ C source code.

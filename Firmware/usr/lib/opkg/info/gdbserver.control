@@ -1,0 +1,13 @@
+Package: gdbserver
+Version: 10.1-1
+Depends: libc, librt, libpthread, libthread-db
+Source: package/devel/gdb
+SourceName: gdbserver
+License: GPL-3.0+
+Section: devel
+SourceDateEpoch: 1688356042
+CPE-ID: cpe:/a:gnu:gdb
+Architecture: arm_cortex-a7_neon
+Installed-Size: 179816
+Description:  GDBSERVER is a program that allows you to run GDB on a different machine than the
+ one which is running the program being debugged.

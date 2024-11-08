@@ -1,0 +1,15 @@
+Package: strace
+Version: 5.10-1
+Depends: libc, librt, libpthread
+Source: package/devel/strace
+SourceName: strace
+License: LGPL-2.1-or-later
+LicenseFiles: COPYING
+Section: utils
+SourceDateEpoch: 1688356042
+CPE-ID: cpe:/a:paul_kranenburg:strace
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 280060
+Description:  A useful diagnostic, instructional, and debugging tool. Allows you to track what
+ system calls a program makes while it is running.

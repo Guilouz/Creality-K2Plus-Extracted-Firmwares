@@ -1,0 +1,13 @@
+Package: python3-markupsafe
+Version: 2.1.0-1
+Depends: libc, librt, libpthread, python3-light
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/MarkupSafe
+SourceName: python3-markupsafe
+License: BSD-3-Clause
+LicenseFiles: LICENSE.rst
+Section: lang
+SourceDateEpoch: 1688356042
+Maintainer: Daniel Golle <daniel@makrotopia.org>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 12643
+Description:  MarkupSafe implements a text object that escapes characters so it is safe to use in HTML and XML.

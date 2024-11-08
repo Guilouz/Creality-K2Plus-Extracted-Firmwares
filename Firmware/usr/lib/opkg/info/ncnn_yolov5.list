@@ -1,0 +1,17 @@
+/usr/bin/yolo_attention
+/usr/lib/yolov5/yolov5n-waste.bin
+/usr/lib/yolov5/yolov5n-ywjc.bin
+/usr/lib/libncnn_yolov5.so
+/usr/lib/yolov5/best_ll.bin
+/usr/lib/yolov5/yolov5n.bin
+/usr/lib/yolov5/yolov5n-zwjc.bin
+/usr/lib/yolov5/best_ll.param
+/usr/lib/yolov5/yolov5n-ywjc.param
+/usr/lib/yolov5/yolov5n-warp.bin
+/usr/bin/detection
+/usr/lib/yolov5/yolov5n-warp.param
+/usr/lib/yolov5/yolov5n-zwjc.param
+/usr/lib/yolov5/best-ll.bin
+/usr/lib/yolov5/yolov5n-waste.param
+/usr/lib/yolov5/best-ll.param
+/usr/lib/yolov5/yolov5n.param

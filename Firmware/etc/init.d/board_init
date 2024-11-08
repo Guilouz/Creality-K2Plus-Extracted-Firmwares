@@ -1,0 +1,29 @@
+#!/bin/sh /etc/rc.common
+
+START=20
+STOP=95
+USE_PROCD=1
+DEPEND=device_manager
+
+USB_HOST_5V=/usr/bin/usb_host_5v.sh
+MCU_RESET=/usr/bin/mcu_reset.sh
+
+gpio_init()
+{
+    [ -x ${USB_HOST_5V} ] && ${USB_HOST_5V} enable
+    [ -x ${MCU_RESET} ] && ${MCU_RESET} enable
+}
+
+gpio_uninit()
+{
+    [ -x ${USB_HOST_5V} ] && ${USB_HOST_5V} disable
+    [ -x ${MCU_RESET} ] && ${MCU_RESET} disable
+}
+
+start_service() {
+    gpio_init
+}
+
+stop_service() {
+    gpio_uninit
+}

@@ -1,0 +1,3 @@
+/etc/ota_bin/get_ota_current_version.sh
+/etc/ota_bin/local_ota_update.sh
+/etc/ota_bin/get_ota_board_name.sh

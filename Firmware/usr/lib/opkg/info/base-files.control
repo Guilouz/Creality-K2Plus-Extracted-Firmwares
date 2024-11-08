@@ -1,0 +1,11 @@
+Package: base-files
+Version: 4-r0-076cb3e35
+Depends: libc, librt, libpthread, netifd, procd, jsonfilter, fstools, fwtool
+Source: package/base-files
+SourceName: base-files
+License: GPL-2.0
+Section: base
+SourceDateEpoch: 1719215654
+Architecture: arm_cortex-a7_neon
+Installed-Size: 47685
+Description:  This package contains a base filesystem and system scripts for OpenWrt.

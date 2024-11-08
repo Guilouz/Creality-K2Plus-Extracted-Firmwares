@@ -1,0 +1,10 @@
+Package: rpmsg_test
+Version: 1.2.0-1
+Depends: libc, librt, libpthread, librpmsg, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/allwinner/common/rpmsg
+SourceName: rpmsg_test
+Section: allwinner
+SourceDateEpoch: 1688356042
+Architecture: arm_cortex-a7_neon
+Installed-Size: 6919
+Description:  rpmsg test demo

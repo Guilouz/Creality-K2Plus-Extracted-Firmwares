@@ -1,0 +1,15 @@
+Package: liblzo2
+Version: 2.10-4
+Depends: libc, librt, libpthread
+Provides: liblzo
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/lzo
+SourceName: liblzo
+License: GPL-2.0-or-later
+LicenseFiles: COPYING
+Section: libs
+SourceDateEpoch: 1688356042
+ABIVersion: 2
+Architecture: arm_cortex-a7_neon
+Installed-Size: 35518
+Description:  LZO is a data compression library which is suitable for data de-/compression
+ in real-time. This means it favours speed over compression ratio.

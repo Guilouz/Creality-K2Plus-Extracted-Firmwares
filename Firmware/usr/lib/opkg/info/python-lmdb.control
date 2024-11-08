@@ -1,0 +1,16 @@
+Package: python-lmdb
+Version: 0.97-1
+Depends: libc, librt, libpthread, python3
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/python-lmdb
+SourceName: python-lmdb
+License: OLDAP-2.8
+LicenseFiles: LICENSE
+Section: lang
+SourceDateEpoch: 1695213574
+Maintainer: Jeffery To <jeffery.to@gmail.com>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 84516
+Description:  Six is a Python 2 and 3 compatibility library.  It provides utility functions
+ for smoothing over the differences between the Python versions with the goal of
+ writing Python code that is compatible on both Python versions.  See the
+ documentation for more information on what is provided.

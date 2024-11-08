@@ -1,0 +1,14 @@
+Package: libc
+Version: -3
+Depends: libgcc1
+Source: package/libs/toolchain
+SourceName: libc
+License: GPL-3.0-with-GCC-exception
+Section: libs
+SourceDateEpoch: 1688356042
+Status: unknown hold not-installed
+Essential: yes
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 987384
+Description:  C library

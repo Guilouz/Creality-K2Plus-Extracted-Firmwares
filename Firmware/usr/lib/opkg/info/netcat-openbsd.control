@@ -1,0 +1,10 @@
+Package: netcat-openbsd
+Version: debian_1.195-2
+Depends: libc, librt, libpthread, libbsd0
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/netcat-openbsd
+SourceName: netcat-openbsd
+Section: creality
+SourceDateEpoch: 1709343214
+Architecture: arm_cortex-a7_neon
+Installed-Size: 13010
+Description:  netcat-openbsd

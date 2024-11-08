@@ -1,0 +1,12 @@
+Package: uci
+Version: 2021-04-14-4b3db117-5
+Depends: libc, librt, libpthread, libuci20130104
+Source: package/system/uci
+SourceName: uci
+License: LGPL-2.1
+Section: base
+SourceDateEpoch: 1688356042
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 7379
+Description:  Utility for the Unified Configuration Interface (UCI)

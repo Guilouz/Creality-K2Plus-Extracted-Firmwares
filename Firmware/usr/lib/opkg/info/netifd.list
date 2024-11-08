@@ -1,0 +1,17 @@
+/lib/netifd/proto/dhcp.sh
+/etc/init.d/network
+/lib/netifd/netifd-proto.sh
+/sbin/ifdown
+/lib/netifd/dhcp.script
+/usr/share/udhcpc/default.script
+/lib/network/config.sh
+/lib/upgrade/keep.d/netifd
+/etc/hotplug.d/net/20-smp-packet-steering
+/sbin/netifd
+/sbin/devstatus
+/lib/netifd/utils.sh
+/lib/netifd/netifd-wireless.sh
+/etc/udhcpc.user
+/sbin/ifstatus
+/sbin/ifup
+/etc/uci-defaults/14_migrate-dhcp-release

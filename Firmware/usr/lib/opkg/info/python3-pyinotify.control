@@ -1,0 +1,13 @@
+Package: python3-pyinotify
+Version: 0.9.6-1
+Depends: libc, librt, libpthread, python3-light, python3-ctypes, python3-logging
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/python3-pyinotify
+SourceName: python3-pyinotify
+License: MIT
+LicenseFiles: COPYING
+Section: lang
+SourceDateEpoch: 1688356042
+Maintainer: Gerald Kerma <gandalf@gk2.net>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 29685
+Description:  Pyinotify is a Python module for monitoring filesystems changes.

@@ -1,0 +1,16 @@
+Package: python3-pip-src
+Version: 22.0.4-1
+Depends: libc, librt, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/lang/python/python3
+SourceName: python3-pip-src
+License: MIT
+LicenseFiles: LICENSE.txt
+Section: lang
+SourceDateEpoch: 1722154739
+CPE-ID: cpe:/a:python:python
+Maintainer: Jeffery To <jeffery.to@gmail.com>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 1393737
+Description:  Python 3.9 pip module
+ 
+ This package contains the Python source files for python3-pip.

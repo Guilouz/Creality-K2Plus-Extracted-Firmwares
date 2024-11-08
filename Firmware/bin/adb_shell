@@ -1,0 +1,9 @@
+#!/bin/sh
+export ENV='/etc/adb_profile'
+if [ $1 = '-' ];then
+	exec /bin/login
+elif [ $1 = '-c' ];then
+	exec /bin/login -c "$2"
+else
+	exec /bin/login
+fi

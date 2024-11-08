@@ -1,0 +1,11 @@
+/usr/bin/auto_uvc.sh
+/usr/lib/libai_capture.so
+/usr/bin/capture
+/etc/hotplug.d/usb/60-v4l
+/usr/bin/ai_capture
+/usr/bin/ai_engine
+/usr/bin/webrtc_local
+/usr/bin/cam_app
+/usr/bin/cam_sub_app
+/etc/init.d/webrtc
+/usr/bin/webrtc

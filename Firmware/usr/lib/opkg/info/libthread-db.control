@@ -1,0 +1,13 @@
+Package: libthread-db
+Version: -3
+Source: package/libs/toolchain
+SourceName: libthread-db
+License: GPL-3.0-with-GCC-exception
+Section: libs
+SourceDateEpoch: 1688356042
+Status: unknown hold not-installed
+Essential: yes
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 9915
+Description:  POSIX thread library debugging support

@@ -1,0 +1,12 @@
+[ "$ACTION" = "bind" ] && [ "$INTERFACE" = "3/1/1" ] && {
+    mkdir -p /dev/input/by-id
+    node=$(basename $(find /sys/${DEVPATH} -iname "event*"))
+    ln -s /dev/input/$node /dev/input/by-id/usb_keyboard
+    ubus call usb_keyboard set_state '{"usb_keyboard_plugged": 1}'
+}
+
+[ "$ACTION" = "unbind" ] && [ "$INTERFACE" = "3/1/1" ] && {
+    logger -t keyboard "remove soft link: usb_keyboard"
+    rm -f /dev/input/by-id/usb_keyboard
+    ubus call usb_keyboard set_state '{"usb_keyboard_plugged": 0}'
+}

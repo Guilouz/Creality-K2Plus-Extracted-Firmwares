@@ -1,0 +1,12 @@
+Package: fwtool
+Version: 2019-11-12-8f7fe925-1
+Depends: libc, librt, libpthread
+Source: package/system/fwtool
+SourceName: fwtool
+License: GPL-2.0
+Section: utils
+SourceDateEpoch: 1688356042
+Maintainer: Felix Fietkau <nbd@nbd.name>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 4313
+Description:  Utility for appending and extracting firmware metadata and signatures

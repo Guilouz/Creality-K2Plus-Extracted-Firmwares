@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+
+START=96
+PROG=/usr/bin/wipe_data
+
+start() {
+    $PROG &
+}

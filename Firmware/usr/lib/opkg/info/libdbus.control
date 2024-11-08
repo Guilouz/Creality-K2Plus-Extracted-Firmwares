@@ -1,0 +1,12 @@
+Package: libdbus
+Version: 1.12.12-1
+Depends: libc, librt, libpthread, libpthread
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/utils/dbus
+SourceName: libdbus
+License: AFL-2.1
+Section: utils
+SourceDateEpoch: 1688356042
+CPE-ID: cpe:/a:freedesktop:dbus
+Architecture: arm_cortex-a7_neon
+Installed-Size: 103053
+Description:  Simple interprocess messaging system (library)
