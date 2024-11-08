@@ -6,4 +6,4 @@
 
 You can find the firmware changes for each version:
 
-- [Changes from **1.1.0.57** to **1.1.0.65**]()
+- [Changes from **1.1.0.57** to **1.1.0.65**](https://github.com/Guilouz/Creality-K2Plus-Extracted-Firmwares/commit/1fc620b14032cca67b4006311d4fa6b83f34f41b)
