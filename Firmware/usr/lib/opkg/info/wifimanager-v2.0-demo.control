@@ -4,7 +4,7 @@ Depends: libc, librt, libpthread, wifimanager-v2.0, wifimanager-v2.0-lib, wirele
 Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/allwinner/wireless/wifimanager
 SourceName: wifimanager-v2.0-demo
 Section: opt
-SourceDateEpoch: 1709185722
+SourceDateEpoch: 1730277363
 Architecture: arm_cortex-a7_neon
-Installed-Size: 15624
+Installed-Size: 15623
 Description:  Tina wifimanager-v2.0 app demo

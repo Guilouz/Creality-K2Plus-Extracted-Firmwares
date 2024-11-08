@@ -706,6 +706,7 @@
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/urllib3/connectionpool.py
 /usr/share/klipper/config/K1_CR4CU220812S10/printer.cfg
 /usr/share/klipper/.gitignore
+/usr/share/klipper/fw/F008/rfid/rfd0_010_G21-rfd0_000_006.bin
 /usr/share/klipper/klippy/extras/multi_pin.py
 /usr/share/klipper/test/klippy/input_shaper.test
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/colorama/win32.pyc
@@ -867,7 +868,6 @@
 /usr/share/klippy-env/lib/python3.9/site-packages/setuptools/command/bdist_rpm.py
 /usr/share/klipper/klippy/kinematics/polar.py
 /usr/share/klipper/config/printer-creality-ender2-2017.cfg
-/usr/share/klipper/fw/F008/mcu0_140_G32-mcu0_020_000.bin
 /usr/share/klippy-env/lib/python3.9/site-packages/setuptools/site-patch.pyc
 /usr/share/klipper/config/K2_CR0CN200400C10/box.cfg
 /usr/share/klipper/config/generic-azteeg-x5-mini-v3.cfg
@@ -1287,6 +1287,7 @@
 /usr/share/klipper/config/printer-tronxy-p802e-2020.cfg
 /usr/share/klipper/scripts/klipper-pru-start.sh
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/distlib/markers.pyc
+/usr/share/klipper/fw/F008/mcu0_140_G32-mcu0_021_000.bin
 /usr/share/klipper/klippy/extras/temperature_mcu.py
 /usr/share/klippy-env/lib/python3.9/site-packages/setuptools/command/bdist_egg.py
 /usr/share/klippy-env/lib/python3.9/site-packages/setuptools/command/upload.pyc

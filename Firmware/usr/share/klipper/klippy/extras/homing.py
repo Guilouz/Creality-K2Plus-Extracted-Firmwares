@@ -433,6 +433,12 @@ class PrinterHoming:
                                 z_align.is_already_zodwn = True
                                 gcode.run_script_from_command("SET_Z_LIMIT")
                                 continue
+                            curtime = self.printer.get_reactor().monotonic()
+                            gcode_move = self.printer.lookup_object('gcode_move')
+                            if 'z' in toolhead.get_status(curtime)['homed_axes'] and z_align.is_already_zodwn==True and \
+                              gcode_move.get_status(curtime)['position'][2] > 10:
+                                gcmd = 'G1 F%d Z%.3f' % (30 * 60, 10)
+                                self.run_gcmd(gcmd, wait=True)
                             # 不做光电找平
                             kin.home(homing_state)
                             gcode.run_script_from_command("SET_Z_LIMIT")

@@ -30,6 +30,7 @@ def calc_move_time(dist, speed, accel):
 
 class ForceMove:
     def __init__(self, config):
+        self.config = config
         self.printer = config.get_printer()
         self.steppers = {}
         # Setup iterative solver
@@ -113,6 +114,11 @@ class ForceMove:
         self._restore_enable(stepper, was_enable)
     cmd_FORCE_MOVE_help = "Manually move a stepper; invalidates kinematics"
     def cmd_FORCE_MOVE(self, gcmd):
+        if self.config.has_section("motor_control") and self.config.getsection('motor_control').getint('switch')==1:
+            if self.printer.lookup_object('motor_control').is_ready == False:
+                gcode = self.printer.lookup_object('gcode')
+                gcode.respond_info("The motor parameters are initializing, Please try again later...")
+                return
         stepper = self._lookup_stepper(gcmd)
         distance = gcmd.get_float('DISTANCE')
         speed = gcmd.get_float('VELOCITY', above=0.)

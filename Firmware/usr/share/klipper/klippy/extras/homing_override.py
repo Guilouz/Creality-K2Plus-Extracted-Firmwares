@@ -6,6 +6,7 @@
 
 class HomingOverride:
     def __init__(self, config):
+        self.config = config
         self.printer = config.get_printer()
         self.start_pos = [config.getfloat('set_position_' + a, None)
                           for a in 'xyz']
@@ -18,6 +19,10 @@ class HomingOverride:
         self.prev_G28 = self.gcode.register_command("G28", None)
         self.gcode.register_command("G28", self.cmd_G28)
     def cmd_G28(self, gcmd):
+        if self.config.has_section("motor_control") and self.config.getsection('motor_control').getint('switch')==1:
+            if self.printer.lookup_object('motor_control').is_ready == False:
+                self.gcode.respond_info("The motor parameters are initializing, Please try again later...")
+                return
         if self.in_script:
             # Was called recursively - invoke the real G28 command
             self.prev_G28(gcmd)

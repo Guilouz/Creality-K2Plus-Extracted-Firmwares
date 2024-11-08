@@ -30,6 +30,7 @@ class Zalign:
         self.quickSpeed = self.config.getsection('z_align').getint('quick_speed')
         self.slowSpeed = self.config.getsection('z_align').getint('slow_speed')
         self.risingDist = self.config.getsection('z_align').getint('rising_dist')
+        self.safeDist = self.config.getsection('z_align').getint('safe_dist')
         self.filterCnt = self.config.getsection('z_align').getint('filter_cnt')
         self.timeout = self.config.getsection('z_align').getint('timeout')
         self.retries = self.config.getsection('z_align').getint('retries')
@@ -144,7 +145,7 @@ class Zalign:
         self.gcode.run_script_from_command("RESTORE_Z_LIMIT")
         self.gcode.run_script_from_command("BED_MESH_CLEAR")
         reactor = self.printer.get_reactor()
-        query_z_align = self.mcu.lookup_query_command("query_z_align oid=%c enable=%c quickSpeed=%u slowSpeed=%u risingDist=%u filterCnt=%c",
+        query_z_align = self.mcu.lookup_query_command("query_z_align oid=%c enable=%c quickSpeed=%u slowSpeed=%u risingDist=%u filterCnt=%c safeDist=%u",
                                                       "z_align_status oid=%c flag=%i deltaError1=%i", oid=self.oidz)
 
         rotation_distance = self.config.getsection('stepper_z').getfloat('rotation_distance')  # 8
@@ -156,11 +157,12 @@ class Zalign:
         quickSpeedTicks = int(1/(self.quickSpeed/step_distance)*mcu_freq/2) # 除以2才和klipper的速度一致
         slowSpeedTicks = int(1/(self.slowSpeed/step_distance)*mcu_freq/2) # 除以2才和klipper的速度一致
         risingDistStep = int(self.risingDist/step_distance)*2 # 乘2才和klipper的步数一致
+        safeDistStep = int(self.safeDist/step_distance)*2
         enable = 1
         def run_cmd(cur_retries):
             deltaError = 0
-            msg = "send query_z_align cur_retries:%s oid=%d enable=%d quickSpeed=%s slowSpeed=%s risingDist=%s filterCnt:%s"%(cur_retries, self.oidz, enable, quickSpeedTicks, slowSpeedTicks, risingDistStep, self.filterCnt)
-            params = query_z_align.send([self.oidz, enable, quickSpeedTicks, slowSpeedTicks, risingDistStep, self.filterCnt])
+            msg = "send query_z_align cur_retries:%s oid=%d enable=%d quickSpeed=%s slowSpeed=%s risingDist=%s filterCnt:%s safeDist:%s"%(cur_retries, self.oidz, enable, quickSpeedTicks, slowSpeedTicks, risingDistStep, self.filterCnt, safeDistStep)
+            params = query_z_align.send([self.oidz, enable, quickSpeedTicks, slowSpeedTicks, risingDistStep, self.filterCnt, safeDistStep])
             # {'oid': 1, 'flag': 0, 'deltaError1': 5, '#name': 'z_align_status', '#sent_time': 49.895344040666664, '#receive_time': 49.995911207}
             self.gcode.respond_info(msg)
             curtime = reactor.monotonic()
@@ -178,6 +180,10 @@ class Zalign:
                     self.gcode.respond_info("usetime:%s z_align_status :%s"%(usetime, str(self.mcu._serial.z_align_status)))
                     deltaError = int(self.mcu._serial.z_align_status.get("deltaError1", 0))
                     break
+                elif self.mcu._serial.z_align_status.get("flag", 0) == 2:
+                    self.gcode._respond_error("""{"code":"key357", "msg":"光电开关状态异常或者是热床过于倾斜", "values":[]}""")
+                    reactor.pause(reactor.monotonic() + 5.0)
+                    return MOTOR_PROTECT_ERROR
                 reactor.pause(reactor.monotonic() + 0.1)
             return deltaError
         toolhead = self.printer.lookup_object('toolhead')

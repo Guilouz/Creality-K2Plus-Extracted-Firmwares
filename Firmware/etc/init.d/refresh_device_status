@@ -19,7 +19,17 @@ refresh_laser_status() {
     }
 }
 
+TIMELAPSE_FILE=/var/run/main_timelapse.pid
+
+refresh_cam_status() {
+    [ -e $TIMELAPSE_FILE ] && {
+        [ $(ps | grep `cat $TIMELAPSE_FILE` | grep -v grep | wc -l) -eq 1 ] && \
+            ubus call camera set_state '{"type": 0,  "online": 1}'
+    }
+}
+
 start_service() {
     refresh_udisk_status
     refresh_laser_status
+    refresh_cam_status
 }

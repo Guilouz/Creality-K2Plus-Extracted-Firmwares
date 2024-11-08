@@ -45,6 +45,7 @@ def capture(end_print=False, frame=15):
 
 class VirtualSD:
     def __init__(self, config):
+        self.config = config
         self.printer = config.get_printer()
         self.printer.register_event_handler("klippy:shutdown",
                                             self.handle_shutdown)
@@ -248,6 +249,10 @@ class VirtualSD:
     cmd_SDCARD_PRINT_FILE_help = "Loads a SD file and starts the print.  May "\
         "include files in subdirectories."
     def cmd_SDCARD_PRINT_FILE(self, gcmd):
+        if self.config.has_section("motor_control") and self.config.getsection('motor_control').getint('switch')==1:
+            if self.printer.lookup_object('motor_control').is_ready == False:
+                self.gcode.respond_info("The motor parameters are initializing, Please try again later...")
+                return
         self.end_print_state = False
         self.print_id = ""
         if self.work_timer is not None:

@@ -27,7 +27,7 @@ if [ $# -eq 1  -o $# -eq 2 ]; then
             $KEYBOX_SCRIPT -w pcba_test 1 2>&1 >/dev/null
 
         elif [ "$PARAM" = "structure_version" -a "x$2" != "x" ]; then
-            $KEYBOX_SCRIPT -w structure_version $2 2>&1 >/dev/null
+            $KEYBOX_SCRIPT -w struct_ver $2 2>&1 >/dev/null
 
         fi
     fi

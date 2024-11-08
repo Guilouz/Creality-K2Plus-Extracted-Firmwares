@@ -218,6 +218,14 @@ class GCodeMove:
                     else:
                         # value relative to base coordinate position
                         self.last_position[pos] = v + self.base_position[pos]
+            if 'Z' in params:
+                print_stats = self.printer.lookup_object('print_stats')
+                if print_stats.state != "printing":
+                    toolhead = self.printer.lookup_object('toolhead')
+                    curtime = self.printer.get_reactor().monotonic()
+                    if 'z' in toolhead.get_status(curtime)['homed_axes'] and self.last_position[2] < -2:
+                        logging.info("Minimum Limit -2 last_position[2]:%s"%self.last_position[2])
+                        self.last_position[2] = -2
             if 'E' in params:
                 v = float(params['E']) * self.extrude_factor
                 if not self.absolute_coord or not self.absolute_extrude:

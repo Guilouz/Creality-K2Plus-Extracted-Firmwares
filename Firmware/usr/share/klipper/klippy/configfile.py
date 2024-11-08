@@ -123,6 +123,8 @@ class ConfigWrapper:
     def get_prefix_options(self, prefix):
         return [o for o in self.fileconfig.options(self.section)
                 if o.startswith(prefix)]
+    def get_options(self):
+        return [o for o in self.fileconfig.options(self.section)]
     def deprecate(self, option, value=None):
         if not self.fileconfig.has_option(self.section, option):
             return

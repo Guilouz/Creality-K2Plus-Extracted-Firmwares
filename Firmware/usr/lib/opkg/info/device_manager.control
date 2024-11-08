@@ -4,7 +4,7 @@ Depends: libc, librt, libpthread, libcrlog, libjson-c5, libblobmsg-json20210516,
 Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/device_manager
 SourceName: device_manager
 Section: creality
-SourceDateEpoch: 1708328928
+SourceDateEpoch: 1729602674
 Architecture: arm_cortex-a7_neon
-Installed-Size: 10262
+Installed-Size: 10353
 Description:  device_manager

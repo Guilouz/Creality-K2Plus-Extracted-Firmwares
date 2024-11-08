@@ -10,23 +10,25 @@ import copy
 import threading
 from subprocess import check_output
 
-def extract_AI_switch_value(json_file):
+def extract_ai_control_prefer_values(json_file, keys):
     # 读取 JSON 文件内容
     try:
         with open(json_file, 'r') as file:
             data = json.load(file)
     except Exception as e:
-        logging.info(f"Error opening or reading the JSON file: {e}")
-        return -1
+        logging.error(f"Error opening or reading the JSON file: {e}")
+        return None
 
-    # 查找 ai_control 中的 switch 值
-    try:
-        switch_value = data['ai_control']['switch']
-        # logging.info(f"switch: {switch_value}")
-        return switch_value
-    except KeyError as e:
-        logging.info(f"Key error: {e} not found in the JSON data")
-        return -2
+    # 查找 ai_control 中的指定键值
+    values = {}
+    for key in keys:
+        if 'ai_control' in data and key in data['ai_control']:
+            values[key] = data['ai_control'][key]
+        else:
+            logging.warning(f"Key '{key}' not found in 'ai_control'")
+            values[key] = None
+
+    return values
     
 def nozzle_cam_power_on():
     try:
@@ -84,7 +86,7 @@ class LoadAI:
         self.gcode.register_command(
             "LOAD_AI_NOZZLE_CAM_POWER_OFF", self.cmd_LOAD_AI_NOZZLE_CAM_POWER_OFF)
         self.gcode.register_command(
-            "LOAD_AI_SET_AI_SWITCH", self.cmd_LOAD_AI_SET_AI_SWITCH)
+            "LOAD_AI_SET_AI_CONTROL_PREFER", self.cmd_LOAD_AI_SET_AI_CONTROL_PREFER)
         self.gcode.register_command(
             "LOAD_AI_DEAL", self.cmd_LOAD_AI_DEAL)
         self.gcode.register_command(
@@ -93,23 +95,89 @@ class LoadAI:
             "LOAD_AI_GET_STATUS", self.cmd_LOAD_AI_GET_STATUS)
         
         # user_print_refer = "/mnt/UDISK/creality/userdata/config/user_print_refer.json"
-        # self.ai_switch = extract_AI_switch_value(user_print_refer)
+        # ai_control_values = extract_ai_control_prefer_values(user_print_refer, ["switch", "wasteSwitch"])
+        # self.ai_switch = ai_control_values.get("switch") if ai_control_values else None
+        # self.ai_waste_switch = ai_control_values.get("wasteSwitch") if ai_control_values else None
         # self.cx_ai_engine_status = {
         #     "ai_switch": self.ai_switch,
+        #     "ai_waste_switch": self.ai_waste_switch,
         #     "command_type": "",
         #     "command": "",
         #     "command_description": "",
         #     "stderr": "",
-        #     "ai_results": ""
+        #     "ai_results": "",
+        #     "max_re_prob": 0.0,
+        #     "normalized_total_area": 0.0,
+        #     "output_width": 0,
+        #     "output_height": 0
         # }
         self.cx_ai_engine_status = {}
         self.ai_switch = 0
+        self.ai_waste_switch = 0
         self.result = ""
         self.stderr = ""
+
+    def calculate_overlap_area(self, rectangles):
+        """使用扫描线算法计算矩形的重叠区域总面积"""
+        try:
+            # 事件定义为 (x, opening/closing, y1, y2)
+            OPEN, CLOSE = 1, -1
+            events = []
+
+            # 为所有矩形生成事件
+            for (x1, y1, x2, y2) in rectangles:
+                events.append((x1, OPEN, y1, y2))
+                events.append((x2, CLOSE, y1, y2))
+
+            # 按 x 坐标对事件进行排序
+            events.sort()
+
+            # 使用扫描线计算区域面积
+            def calc_area(active_y_intervals):
+                """计算当前活动的 y 区间覆盖的 y 长度"""
+                total = 0
+                current_y = -1
+                for (y1, y2) in active_y_intervals:
+                    current_y = max(current_y, y1)
+                    total += max(0, y2 - current_y)
+                    current_y = max(current_y, y2)
+                return total
+
+            active_intervals = []
+            last_x = 0
+            total_area = 0
+
+            for x, typ, y1, y2 in events:
+                logging.info(f"Processing event: x={x}, typ={typ}, y1={y1}, y2={y2}")
+
+                # 计算 last_x 和当前 x 之间区域的面积
+                area = calc_area(active_intervals) * (x - last_x)
+                logging.info(f"Area between x={last_x} and x={x}: {area}")
+                total_area += area
+                last_x = x
+
+                if typ == OPEN:
+                    active_intervals.append((y1, y2))
+                    active_intervals.sort()
+                    logging.info(f"Added interval: {(y1, y2)}, active_intervals={active_intervals}")
+                elif typ == CLOSE:
+                    try:
+                        active_intervals.remove((y1, y2))
+                        logging.info(f"Removed interval: {(y1, y2)}, active_intervals={active_intervals}")
+                    except ValueError:
+                        logging.warning(f"Warning: Interval {(y1, y2)} not found in {active_intervals}")
+
+            return total_area
+
+        except Exception as e:
+            logging.error(f"An error occurred in calculate_overlap_area: {e}")
+            logging.exception("Exception details:")
+            return 0
 
     def process_waste_ai_detect_result(self, result_stdout_str):
         cnt_pattern = r"ai detection completed, cnt = (\d+)"
         result_pattern = r"(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)"
+        output_size_pattern = r"output width:\s+(\d+),\s+height:\s+(\d+)"
         
         # 获取AI识别个数
         cnt_match = re.search(cnt_pattern, result_stdout_str)
@@ -118,9 +186,22 @@ class LoadAI:
             ai_results = []
 
             logging.info("ai_size_int:%d", ai_size_int)
+
+            # 提取输出图片的宽度和高度
+            output_size_match = re.search(output_size_pattern, result_stdout_str)
+            if output_size_match:
+                output_width = int(output_size_match.group(1))
+                output_height = int(output_size_match.group(2))
+            else:
+                output_width = 0
+                output_height = 0
+
             # 提取检测结果
             data_start = result_stdout_str.split("num / re_label / re_prob / re_obj_rect_x / re_obj_rect_y / re_obj_rect_width / re_obj_rect_height")[-1]
             data_start = data_start.strip().splitlines()
+
+            rectangles = []
+            max_re_prob = 0
 
             for line in data_start:
                 match = re.match(result_pattern, line)
@@ -135,6 +216,18 @@ class LoadAI:
                         "re_obj_rect_height": float(match.group(7))
                     }
 
+                    # 更新最大 re_prob 值
+                    if ai_result["re_prob"] > max_re_prob:
+                        max_re_prob = ai_result["re_prob"]
+
+                    # 将矩形的坐标转换为 (x1, y1, x2, y2) 格式，并添加到列表中
+                    rectangles.append((
+                        ai_result["re_obj_rect_x"],
+                        ai_result["re_obj_rect_y"],
+                        ai_result["re_obj_rect_x"] + ai_result["re_obj_rect_width"],
+                        ai_result["re_obj_rect_y"] + ai_result["re_obj_rect_height"]
+                    ))
+                    
                      # 移除不需要的键
                     del ai_result["re_obj_rect_x"]
                     del ai_result["re_obj_rect_y"]
@@ -146,7 +239,26 @@ class LoadAI:
                     ai_results.append(ai_result)
             
             ai_results = json.dumps(ai_results)
-            return ai_results
+            # 计算所有矩形的重叠面积
+            total_area = self.calculate_overlap_area(rectangles)
+            # 面积归一化
+            if output_width and output_height:
+                normalized_total_area = total_area / (output_width * output_height)
+                logging.info("Total Area: %f, Overlap Normalized Total Area: %f", total_area, normalized_total_area)
+            else:
+                logging.warning("Output dimensions are not available. Cannot normalize total area.")
+                normalized_total_area = 0
+            
+            # 面积归一化，最大面积为1
+            result_dict = {
+                "ai_results": ai_results,
+                "max_re_prob": max_re_prob if normalized_total_area > 0.35 else 0.0,
+                "normalized_total_area": normalized_total_area,
+                "output_width": output_width,
+                "output_height": output_height
+            }
+
+            return result_dict
 
         return None
 
@@ -156,21 +268,29 @@ class LoadAI:
     def cmd_LOAD_AI_NOZZLE_CAM_POWER_OFF(self, gcmd):
         nozzle_cam_power_off()
 
-    def cmd_LOAD_AI_SET_AI_SWITCH(self, gcmd):
+    def cmd_LOAD_AI_SET_AI_CONTROL_PREFER(self, gcmd):
         logging.info("gcmd: %s"% gcmd.get_command_parameters())
-        self.ai_switch = gcmd.get_int("VALUE", minval=0, maxval=1)
-        logging.info("ai_switch: %d" % self.ai_switch)
+        self.ai_switch = gcmd.get_int("SWITCH", minval=0, maxval=1, default=self.ai_switch)
+        self.ai_waste_switch = gcmd.get_int("WASTE_SWITCH", minval=0, maxval=1, default=self.ai_waste_switch)
+        logging.info("ai_switch: %d, ai_waste_switch: %d" % (self.ai_switch, self.ai_waste_switch))
         # user_print_refer = "/mnt/UDISK/creality/userdata/config/user_print_refer.json"
-        # self.ai_switch = extract_AI_switch_value(user_print_refer)
+        # ai_control_values = extract_ai_control_prefer_values(user_print_refer, ["switch", "wasteSwitch"])
+        # self.ai_switch = ai_control_values.get("switch") if ai_control_values else None
+        # self.ai_waste_switch = ai_control_values.get("wasteSwitch") if ai_control_values else None
         self.cx_ai_engine_status = {
             "ai_switch": self.ai_switch,
+            "ai_waste_switch": self.ai_waste_switch,
             "command_type": "",
             "command": "",
             "command_description": "",
             "stderr": "",
-            "ai_results": ""
+            "ai_results": "",
+            "max_re_prob": 0.0,
+            "normalized_total_area": 0.0,
+            "output_width": 0,
+            "output_height": 0
         }
-        logging.info("LOAD_AI_SET_AI_SWITCH:%s" % self.cx_ai_engine_status)
+        logging.info("LOAD_AI_SET_AI_CONTROL_PREFER:%s" % self.cx_ai_engine_status)
 
     def cmd_LOAD_AI_DEAL(self, gcmd):
         # 加载AI上传图片
@@ -224,7 +344,9 @@ class LoadAI:
     # AI 废料槽检测
     def cmd_LOAD_AI_DETECT_WASTE(self,gcmd):  
         # user_print_refer = "/mnt/UDISK/creality/userdata/config/user_print_refer.json"
-        # ai_switch = extract_AI_switch_value(user_print_refer)
+        # ai_control_values = extract_ai_control_prefer_values(user_print_refer, ["switch", "wasteSwitch"])
+        # self.ai_switch = ai_control_values.get("switch") if ai_control_values else None
+        # self.ai_waste_switch = ai_control_values.get("wasteSwitch") if ai_control_values else None
         # # self.gcode.respond_info(f"switch: {ai_switch}")
         # if ai_switch != 1:
         #     # self.gcode.respond_info(f"switch: {ai_switch}")
@@ -233,11 +355,16 @@ class LoadAI:
         cmd = "ai_engine 1 5 --user_data_dir=/mnt/UDISK"
         json_output = {
             "ai_switch": self.ai_switch,
+            "ai_waste_switch": self.ai_waste_switch,
             "command_type": "ai_engine",
             "command": cmd,
             "command_description": "waste",
             "stderr": "",
-            "ai_results": []
+            "ai_results": [],
+            "max_re_prob": 0.0,
+            "normalized_total_area": 0.0,
+            "output_width": 0,
+            "output_height": 0
         }
 
         try:
@@ -262,7 +389,11 @@ class LoadAI:
             else:
                 ai_results = self.process_waste_ai_detect_result(self.result)
                 if ai_results is not None:
-                    json_output["ai_results"] = ai_results
+                    json_output["ai_results"] = ai_results["ai_results"]
+                    json_output["max_re_prob"] = ai_results["max_re_prob"]
+                    json_output["normalized_total_area"] = ai_results["normalized_total_area"]
+                    json_output["output_width"] = ai_results["output_width"]
+                    json_output["output_height"] = ai_results["output_height"]
 
              # 更新状态并记录信息
             self.cx_ai_engine_status = copy.deepcopy(json_output)
@@ -373,23 +504,34 @@ class LoadAI:
         # 接口功能测试
         self.cx_ai_engine_status = {
                 "ai_switch": 1,
+                "ai_waste_switch": 1,
                 "command_type": "ai_engine",
                 "command": "ai_engine 1 5 --user_data_dir=/mnt/UDISK",
                 "command_description": "waste",
                 "stderr": "",
-                "ai_results": "cam_type=1\nmode=5\ndebug=0\nuser_data_dir=/mnt/UDISK\ngcode_path=\nz_height=0.000000\nParseParamFile model_str_=F008\nParseParamFile sys_version_=1.1.0.15\nthe pid is alive...!\nflag = 0\ninput = /mnt/UDISK/ai_image/sub_capture.bmp\nAI_upload_mode = 1\n{\"reqId\":\"1722419562737\",\"dn\":\"00000000000000\",\"code\":\"key609\",\"data\":\"0.000000|1722419562.736825|/usr/data/ai_image/ai_property/F008-waste-2024_7_31_17_52_42.jpg\\n\"}\noutput = /mnt/UDISK/ai_image/sub_processed_ai_waste_mode.jpg\nai detection completed, cnt = 2\nnum / re_label / re_prob / re_obj_rect_x / re_obj_rect_y / re_obj_rect_width / re_obj_rect_height\n0\t0\t0.931467\t93.759918\t16.903725\t1009.506836\t1182.096313\n1\t0\t0.831467\t93.759918\t16.903725\t1009.506836\t1182.096313",
+                "ai_results": "cam_type=1\nmode=5\ndebug=0\nuser_data_dir=/mnt/UDISK\ngcode_path=\nz_height=0.000000\nParseParamFile model_str_=F008\nParseParamFile sys_version_=1.1.0.15\nthe pid is alive...!\nflag = 0\ninput = /mnt/UDISK/ai_image/sub_capture.bmp\nAI_upload_mode = 1\n{\"reqId\":\"1722419562737\",\"dn\":\"00000000000000\",\"code\":\"key609\",\"data\":\"0.000000|1722419562.736825|/usr/data/ai_image/ai_property/F008-waste-2024_7_31_17_52_42.jpg\\n\"}\noutput width: 1600, height: 1200\noutput = /mnt/UDISK/ai_image/sub_processed_ai_waste_mode.jpg\nai detection completed, cnt = 3\nnum / re_label / re_prob / re_obj_rect_x / re_obj_rect_y / re_obj_rect_width / re_obj_rect_height\n0\t0\t0.931467\t1.0\t0.0\t4.0\t4.0\n1\t0\t0.831467\t3.0\t1.0\t3.0\t4.0\n2\t0\t0.731467\t0.0\t3.0\t7.0\t3.0",
+                "max_re_prob": 0.0,
+                "normalized_total_area": 0.0,
+                "output_width": 0,
+                "output_height": 0
         }
         result_stdout = self.cx_ai_engine_status["ai_results"]
         ai_results = self.process_waste_ai_detect_result(result_stdout)
         if ai_results is not None:
-            self.cx_ai_engine_status["ai_results"] = ai_results
+            self.cx_ai_engine_status["ai_results"] = ai_results["ai_results"]
+            self.cx_ai_engine_status["max_re_prob"] = ai_results["max_re_prob"]
+            self.cx_ai_engine_status["normalized_total_area"] = ai_results["normalized_total_area"]
+            self.cx_ai_engine_status["output_width"] = ai_results["output_width"]
+            self.cx_ai_engine_status["output_height"] = ai_results["output_height"]
         json_output_str = json.dumps(self.cx_ai_engine_status, indent=4)  
         logging.info(json_output_str)
         
     def get_status(self, eventtime):
         # user_print_refer = "/mnt/UDISK/creality/userdata/config/user_print_refer.json"
-        # ai_switch = extract_AI_switch_value(user_print_refer)
-        # self.cx_ai_engine_status["ai_switch"] = ai_switch
+        # ai_control_values = extract_ai_control_prefer_values(user_print_refer, ["switch", "wasteSwitch"])
+        # self.ai_switch = ai_control_values.get("switch") if ai_control_values else None
+        # self.ai_waste_switch = ai_control_values.get("wasteSwitch") if ai_control_values else None
+        # self.cx_ai_engine_status["ai_switch"] = self.ai_switch
         return self.cx_ai_engine_status
 
 def load_config(config):

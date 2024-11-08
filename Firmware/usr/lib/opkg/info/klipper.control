@@ -1,10 +1,10 @@
 Package: klipper
-Version: 12a40413
+Version: 6086947a
 Depends: libc, librt, libpthread, python3, python3-setuptools, calc_psd
 Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/klipper
 SourceName: klipper
 Section: creality
 SourceDateEpoch: 1722154742
 Architecture: arm_cortex-a7_neon
-Installed-Size: 31683214
+Installed-Size: 31770648
 Description:  with klipper support

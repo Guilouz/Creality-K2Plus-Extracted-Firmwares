@@ -12,7 +12,7 @@
                     logger -t uvc "$node support H264 format!"
                     ln -s /dev/$node /dev/v4l/by-id/main-$node
                     echo /dev/v4l/by-id/main-$node > /tmp/.video_$DEVICENAME
-                    MDEV=main-$node ACTION=add /usr/bin/auto_uvc.sh
+                    MDEV=main-$node ACTION=add /usr/bin/auto_uvc.sh &
                 }
             done
         else
@@ -24,7 +24,7 @@
                         logger -t uvc "$node support H264 format!"
                         ln -s /dev/$node /dev/v4l/by-id/main-$node
                         echo /dev/v4l/by-id/main-$node > /tmp/.video_$DEVICENAME
-                        MDEV=main-$node ACTION=add /usr/bin/auto_uvc.sh
+                        MDEV=main-$node ACTION=add /usr/bin/auto_uvc.sh &
                     }
                 done
             else
@@ -35,7 +35,7 @@
                         logger -t uvc "$node support MJPG format!"
                         ln -s /dev/$node /dev/v4l/by-id/sub-$node
                         echo /dev/v4l/by-id/sub-$node > /tmp/.video_$DEVICENAME
-                        MDEV=sub-$node ACTION=add /usr/bin/auto_uvc.sh
+                        MDEV=sub-$node ACTION=add /usr/bin/auto_uvc.sh &
                     }
                 done
             fi

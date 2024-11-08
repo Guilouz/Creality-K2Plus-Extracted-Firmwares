@@ -151,6 +151,8 @@ class PrintStats:
             'power_loss': self.power_loss,
             'z_pos': self.z_pos,
         }
+    def stats(self, eventtime):
+        return False, 'print_stats: %s' % self.state
 
 def load_config(config):
     return PrintStats(config)

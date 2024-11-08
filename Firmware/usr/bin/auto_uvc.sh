@@ -109,11 +109,30 @@ fw_info()
 
 start_uvc()
 {
+    local count=0
     case $1 in
         main-video*)
             echo_console "start cam_app service for $1 : "
+            logger -t uvc "start cam_app service for $1"
 
             fw_info /dev/v4l/by-id/$1
+
+            # wait for UDISK mounted
+            while true
+            do
+                if grep -wq UDISK /proc/mounts ; then
+                    logger -t uvc "UDISK mounted"
+                    break
+                else
+                    sleep 0.4
+                    let count+=1
+                fi
+
+                # time out 6s
+                if [ $count -gt $TIME_OUT_CNT ]; then
+                    break
+                fi
+            done
 
             start-stop-daemon -S -b -m -p /var/run/$1.pid \
                 --exec $PROG -- -i /dev/v4l/by-id/$1 -t $MAIN_CAM \
