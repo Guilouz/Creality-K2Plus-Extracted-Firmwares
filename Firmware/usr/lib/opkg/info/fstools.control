@@ -5,8 +5,8 @@ Source: package/system/fstools
 SourceName: fstools
 License: GPL-2.0
 Section: base
-SourceDateEpoch: 1704186032
+SourceDateEpoch: 1732671709
 Maintainer: John Crispin <john@phrozen.org>
 Architecture: arm_cortex-a7_neon
-Installed-Size: 18551
+Installed-Size: 18549
 Description:  OpenWrt filesystem tools

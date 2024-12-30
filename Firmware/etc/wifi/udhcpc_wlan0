@@ -12,7 +12,7 @@ start_service() {
     if ps | grep [u]dhcpc; then
         killall -q -KILL udhcpc
     fi
-    procd_set_param command $PROG -i wlan0 -S -t 5 -T 7 -b -q
+    procd_set_param command $PROG -i wlan0 -S -t 5 -T 7 -b
     procd_close_instance
 }
 
@@ -29,5 +29,5 @@ restart(){
     if ps | grep [u]dhcpc; then
         killall -q -KILL udhcpc
     fi
-    $PROG -i wlan0 -S -t 5 -T 7 -b -q
+    $PROG -i wlan0 -S -t 5 -T 7 -b
 }

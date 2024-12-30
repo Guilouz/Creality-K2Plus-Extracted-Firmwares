@@ -6,5 +6,5 @@ SourceName: allwinner_uvc
 Section: creality
 SourceDateEpoch: 1729602674
 Architecture: arm_cortex-a7_neon
-Installed-Size: 327165
+Installed-Size: 321941
 Description:  allwinner_uvc

@@ -9,78 +9,21 @@ import re
 import copy
 import threading
 from subprocess import check_output
-
-def extract_ai_control_prefer_values(json_file, keys):
-    # 读取 JSON 文件内容
-    try:
-        with open(json_file, 'r') as file:
-            data = json.load(file)
-    except Exception as e:
-        logging.error(f"Error opening or reading the JSON file: {e}")
-        return None
-
-    # 查找 ai_control 中的指定键值
-    values = {}
-    for key in keys:
-        if 'ai_control' in data and key in data['ai_control']:
-            values[key] = data['ai_control'][key]
-        else:
-            logging.warning(f"Key '{key}' not found in 'ai_control'")
-            values[key] = None
-
-    return values
-    
-def nozzle_cam_power_on():
-    try:
-        logging.info("nozzle_cam_power.sh on")
-        result_capture = subprocess.run(['nozzle_cam_power.sh', 'on'], capture_output=True, text=True)
-        # 打印 ai_capture 的输出
-        logging.info(result_capture.stdout)
-        logging.info(result_capture.stderr)
-
-    except Exception as e:
-        logging.info(f"Error: {e}")
-
-def nozzle_cam_power_off():
-    try:
-        logging.info("nozzle_cam_power.sh off")
-        result_capture = subprocess.run(['nozzle_cam_power.sh', 'off'], capture_output=True, text=True)
-        # 打印 ai_capture 的输出
-        logging.info(result_capture.stdout)
-        logging.info(result_capture.stderr)
-
-    except Exception as e:
-        logging.info(f"Error: {e}")
-def ai_capture():
-    try:
-        logging.info("ai_capture 1")
-        # 运行 ai_capture 命令并捕获输出
-        result_capture = subprocess.run(['ai_capture', '1'], capture_output=True, text=True)
-
-        # 打印 ai_capture 的输出（可选）
-        logging.info(result_capture.stdout)
-        logging.info(result_capture.stderr)
-
-        return result_capture.stdout  # 返回标准输出
-    except Exception as e:
-        logging.info(f"Error: {e}")
-        return None
-
-def remove_files(file_path):
-    command = 'rm -rf ' + file_path
-    try:
-        # Execute the command
-        subprocess.run(command, shell=True, check=True)
-        print("Files removed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error occurred: {e}")
+from extras.base_info import base_dir
     
 class LoadAI:
     def __init__(self, config):
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
-        self.pic_dir = config.get('path', "/mnt/UDISK/ai_image/flowdetect_img")
+        self.flowdetect_img_dir = os.path.join(base_dir, "ai_image/flowdetect_img")
+        self.user_print_refer_path = os.path.join(base_dir, "creality/userdata/config/user_print_refer.json")
+        self.pic_dir = config.get('path', self.flowdetect_img_dir)
         self.gcode = self.printer.lookup_object('gcode')
+        self.toolhead = None
+        self.box_action = None
+        self.printer.register_event_handler('klippy:ready', self.find_objs)
+        self.gcode.register_command(
+            "LOAD_AI_T_CMD_TEST", self.cmd_LOAD_AI_T_CMD_TEST)
         self.gcode.register_command(
             "LOAD_AI_NOZZLE_CAM_POWER_ON", self.cmd_LOAD_AI_NOZZLE_CAM_POWER_ON)
         self.gcode.register_command(
@@ -93,9 +36,7 @@ class LoadAI:
             "LOAD_AI_DETECT_WASTE", self.cmd_LOAD_AI_DETECT_WASTE)
         self.gcode.register_command(
             "LOAD_AI_GET_STATUS", self.cmd_LOAD_AI_GET_STATUS)
-        
-        # user_print_refer = "/mnt/UDISK/creality/userdata/config/user_print_refer.json"
-        # ai_control_values = extract_ai_control_prefer_values(user_print_refer, ["switch", "wasteSwitch"])
+        # ai_control_values = self.extract_ai_control_prefer_values(self.user_print_refer_path, ["switch", "wasteSwitch"])
         # self.ai_switch = ai_control_values.get("switch") if ai_control_values else None
         # self.ai_waste_switch = ai_control_values.get("wasteSwitch") if ai_control_values else None
         # self.cx_ai_engine_status = {
@@ -116,6 +57,77 @@ class LoadAI:
         self.ai_waste_switch = 0
         self.result = ""
         self.stderr = ""
+        self.t_command_count = 2
+
+    def find_objs(self):
+        self.toolhead = self.printer.lookup_object('toolhead')
+        self.box_action = self.printer.lookup_object('box').box_action
+
+    def extract_ai_control_prefer_values(self, json_file, keys):
+        # 读取 JSON 文件内容
+        try:
+            with open(json_file, 'r') as file:
+                data = json.load(file)
+        except Exception as e:
+            logging.error(f"Error opening or reading the JSON file: {e}")
+            return None
+
+        # 查找 ai_control 中的指定键值
+        values = {}
+        for key in keys:
+            if 'ai_control' in data and key in data['ai_control']:
+                values[key] = data['ai_control'][key]
+            else:
+                logging.warning(f"Key '{key}' not found in 'ai_control'")
+                values[key] = None
+
+        return values
+
+    def nozzle_cam_power_on(self):
+        try:
+            logging.info("nozzle_cam_power.sh on")
+            result_capture = subprocess.run(['nozzle_cam_power.sh', 'on'], capture_output=True, text=True)
+            # 打印 ai_capture 的输出
+            logging.info(result_capture.stdout)
+            logging.info(result_capture.stderr)
+
+        except Exception as e:
+            logging.info(f"Error: {e}")
+
+    def nozzle_cam_power_off(self):
+        try:
+            logging.info("nozzle_cam_power.sh off")
+            result_capture = subprocess.run(['nozzle_cam_power.sh', 'off'], capture_output=True, text=True)
+            # 打印 ai_capture 的输出
+            logging.info(result_capture.stdout)
+            logging.info(result_capture.stderr)
+
+        except Exception as e:
+            logging.info(f"Error: {e}")
+
+    def ai_capture(self):
+        try:
+            logging.info("ai_capture 1")
+            # 运行 ai_capture 命令并捕获输出
+            result_capture = subprocess.run(['ai_capture', '1'], capture_output=True, text=True)
+
+            # 打印 ai_capture 的输出（可选）
+            logging.info(result_capture.stdout)
+            logging.info(result_capture.stderr)
+
+            return result_capture.stdout  # 返回标准输出
+        except Exception as e:
+            logging.info(f"Error: {e}")
+            return None
+    
+    def remove_files(self, file_path):
+        command = 'rm -rf ' + file_path
+        try:
+            # Execute the command
+            subprocess.run(command, shell=True, check=True)
+            print("Files removed successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error occurred: {e}")
 
     def calculate_overlap_area(self, rectangles):
         """使用扫描线算法计算矩形的重叠区域总面积"""
@@ -262,19 +274,70 @@ class LoadAI:
 
         return None
 
+    def execute_toolhead_ai_waste_management(self):
+        logging.info(f"execute_toolhead_ai_waste_management start: ai_switch={self.ai_switch}, ai_waste_switch={self.ai_waste_switch}, t_command_count={self.t_command_count}")
+        self.gcode.respond_info("ai_switch = %d, ai_waste_switch = %d \n" % (self.ai_switch, self.ai_waste_switch))
+        if self.t_command_count < 2:
+            self.t_command_count += 1
+            return
+        # T指令达到2次后检测
+        self.t_command_count = 0  # 重置计数器
+        if int(self.ai_waste_switch) == 1:  # AI检测开启
+            self.nozzle_cam_power_on()  # 进料前给喷头上电 LOAD_AI_NOZZLE_CAM_POWER_ON
+            self.box_action.go_to_extrude_pos() # BOX_GO_TO_EXTRUDE_POS
+            self.toolhead.wait_moves() # M400
+            self.gcode.run_script_from_command("G91")
+            self.gcode.run_script_from_command("G1 X-2 F12000")
+            self.toolhead.wait_moves() # M400
+            self.gcode.run_script_from_command("G1 X9 F12000")
+            self.toolhead.wait_moves() # M400
+            self.gcode.respond_info("WILL LOAD_AI_DEAL")
+            # LOAD_AI_DEAL
+            self.gcode.run_script_from_command("LOAD_AI_DETECT_WASTE")  # 废料槽检测
+            self.nozzle_cam_power_off()  # 关灯 LOAD_AI_NOZZLE_CAM_POWER_OFF
+            self.gcode.run_script_from_command("G1 X-7")
+            self.toolhead.wait_moves() # M400
+            self.gcode.run_script_from_command("G90")
+            self.gcode.run_script_from_command("BOX_NOZZLE_CLEAN")  # 擦嘴
+            self.box_action.move_to_safe_pos()  # 去安全位置 BOX_MOVE_TO_SAFE_POS
+
+        logging.info(f"execute_toolhead_ai_waste_management end!!!")
+
+    def cmd_LOAD_AI_T_CMD_TEST(self, gcmd):
+        """
+        根据指定的温度和T编号测试T指令换料擦嘴流程
+        示例：LOAD_AI_T_CMD_TEST TEMP=220 TCMD_NUM=0
+        """
+        self.t_command_count = 2 # 立即触发废料槽检测
+        logging.info("LOAD_AI_T_CMD_TEST gcmd: %s"% gcmd.get_command_parameters())
+        temp = gcmd.get_int("TEMP", minval=180, maxval=300, default=220)
+        tcmd_num = gcmd.get_int("TCMD_NUM", minval=0, maxval=16, default=0)
+        self.gcode.run_script_from_command("BOX_GO_TO_EXTRUDE_POS")
+        self.gcode.run_script_from_command(f"M109 S{temp}")
+        self.gcode.run_script_from_command(f"T{tcmd_num}")
+        self.gcode.run_script_from_command("BOX_GO_TO_EXTRUDE_POS")
+        self.gcode.run_script_from_command("M106 P0 S255")
+        self.gcode.run_script_from_command("M106 P2 S255")
+        self.gcode.run_script_from_command("M109 S140")
+        self.gcode.run_script_from_command("M106 P0 S0")
+        self.gcode.run_script_from_command("M106 P2 S0")
+        self.gcode.run_script_from_command("BOX_NOZZLE_CLEAN")
+        self.gcode.run_script_from_command("M109 S0")
+        self.gcode.run_script_from_command("G90")
+        self.gcode.run_script_from_command("G1 X150 Y150 F7800")
+
     def cmd_LOAD_AI_NOZZLE_CAM_POWER_ON(self, gcmd):
-        nozzle_cam_power_on()
+        self.nozzle_cam_power_on()
         
     def cmd_LOAD_AI_NOZZLE_CAM_POWER_OFF(self, gcmd):
-        nozzle_cam_power_off()
+        self.nozzle_cam_power_off()
 
     def cmd_LOAD_AI_SET_AI_CONTROL_PREFER(self, gcmd):
         logging.info("gcmd: %s"% gcmd.get_command_parameters())
         self.ai_switch = gcmd.get_int("SWITCH", minval=0, maxval=1, default=self.ai_switch)
         self.ai_waste_switch = gcmd.get_int("WASTE_SWITCH", minval=0, maxval=1, default=self.ai_waste_switch)
         logging.info("ai_switch: %d, ai_waste_switch: %d" % (self.ai_switch, self.ai_waste_switch))
-        # user_print_refer = "/mnt/UDISK/creality/userdata/config/user_print_refer.json"
-        # ai_control_values = extract_ai_control_prefer_values(user_print_refer, ["switch", "wasteSwitch"])
+        # ai_control_values = self.extract_ai_control_prefer_values(self.user_print_refer_path, ["switch", "wasteSwitch"])
         # self.ai_switch = ai_control_values.get("switch") if ai_control_values else None
         # self.ai_waste_switch = ai_control_values.get("wasteSwitch") if ai_control_values else None
         self.cx_ai_engine_status = {
@@ -299,14 +362,14 @@ class LoadAI:
             # if not ip:
             #     self.gcode.respond_info("LOAD_AI_DEAL net error")
             #     return
-            # nozzle_cam_power_on()
+            # self.nozzle_cam_power_on()
             # self.reactor.pause(self.reactor.monotonic() + 1)
-            ai_capture()
+            self.ai_capture()
             self.reactor.pause(self.reactor.monotonic() + 2)
             filename = self.find_latest_photo()
             if not filename or not os.path.exists(filename):
                 # 关灯
-                # nozzle_cam_power_off()
+                # self.nozzle_cam_power_off()
                 self.gcode.respond_info("LOAD_AI_DEAL photo error, filename is %s" % filename)
                 return
             files = {'file': filename}
@@ -314,11 +377,11 @@ class LoadAI:
             logging.info("LOAD_AI_DEAL:%s" % response)
             self.gcode.respond_info("LOAD_AI_DEAL:%s" % response)
             logging.info("files:%s",files)
-            remove_files(filename)
+            self.remove_files(filename)
         except Exception as e:
             logging.exception(e)
         # 关灯
-        # nozzle_cam_power_off()
+        # self.nozzle_cam_power_off()
     def ai_engine_capture(self, cmd):
         logging.info(f"Executing command: {cmd}")
         try:
@@ -341,18 +404,15 @@ class LoadAI:
         except Exception as e:
             logging.error(f"An unexpected error occurred: {str(e)}")
 
-    # AI 废料槽检测
-    def cmd_LOAD_AI_DETECT_WASTE(self,gcmd):  
-        # user_print_refer = "/mnt/UDISK/creality/userdata/config/user_print_refer.json"
-        # ai_control_values = extract_ai_control_prefer_values(user_print_refer, ["switch", "wasteSwitch"])
+    def execute_ai_waste_detection(self):
+        # ai_control_values = self.extract_ai_control_prefer_values(self.user_print_refer_path, ["switch", "wasteSwitch"])
         # self.ai_switch = ai_control_values.get("switch") if ai_control_values else None
         # self.ai_waste_switch = ai_control_values.get("wasteSwitch") if ai_control_values else None
         # # self.gcode.respond_info(f"switch: {ai_switch}")
         # if ai_switch != 1:
         #     # self.gcode.respond_info(f"switch: {ai_switch}")
         #     return
-        
-        cmd = "ai_engine 1 5 --user_data_dir=/mnt/UDISK"
+        cmd = f"ai_engine 1 5 --user_data_dir={base_dir}"
         json_output = {
             "ai_switch": self.ai_switch,
             "ai_waste_switch": self.ai_waste_switch,
@@ -411,6 +471,10 @@ class LoadAI:
             logging.info(json_output_str)
             # self.gcode.respond_info(json_output_str)
             return None
+
+    # AI 废料槽检测
+    def cmd_LOAD_AI_DETECT_WASTE(self,gcmd):  
+        return self.execute_ai_waste_detection()
 
     def create_multipart_form_data(self, files):
         """
@@ -501,19 +565,50 @@ class LoadAI:
         return latest_photo_path
     
     def cmd_LOAD_AI_GET_STATUS(self,gcmd):  
+        # 测试数据初始化
+        detection_results = [
+            [0, 0, 0.931467, 1.0, 0.0, 4.0, 4.0],
+            [1, 0, 0.831467, 3.0, 1.0, 3.0, 4.0],
+            [2, 0, 0.731467, 0.0, 3.0, 7.0, 3.0]
+        ]
+        cnt = len(detection_results)
+        # 将数据转换回字符串格式
+        detection_results_str = "\n".join(
+            "\t".join(map(str, result)) for result in detection_results
+        )
+        
         # 接口功能测试
         self.cx_ai_engine_status = {
-                "ai_switch": 1,
-                "ai_waste_switch": 1,
-                "command_type": "ai_engine",
-                "command": "ai_engine 1 5 --user_data_dir=/mnt/UDISK",
-                "command_description": "waste",
-                "stderr": "",
-                "ai_results": "cam_type=1\nmode=5\ndebug=0\nuser_data_dir=/mnt/UDISK\ngcode_path=\nz_height=0.000000\nParseParamFile model_str_=F008\nParseParamFile sys_version_=1.1.0.15\nthe pid is alive...!\nflag = 0\ninput = /mnt/UDISK/ai_image/sub_capture.bmp\nAI_upload_mode = 1\n{\"reqId\":\"1722419562737\",\"dn\":\"00000000000000\",\"code\":\"key609\",\"data\":\"0.000000|1722419562.736825|/usr/data/ai_image/ai_property/F008-waste-2024_7_31_17_52_42.jpg\\n\"}\noutput width: 1600, height: 1200\noutput = /mnt/UDISK/ai_image/sub_processed_ai_waste_mode.jpg\nai detection completed, cnt = 3\nnum / re_label / re_prob / re_obj_rect_x / re_obj_rect_y / re_obj_rect_width / re_obj_rect_height\n0\t0\t0.931467\t1.0\t0.0\t4.0\t4.0\n1\t0\t0.831467\t3.0\t1.0\t3.0\t4.0\n2\t0\t0.731467\t0.0\t3.0\t7.0\t3.0",
-                "max_re_prob": 0.0,
-                "normalized_total_area": 0.0,
-                "output_width": 0,
-                "output_height": 0
+            "ai_switch": 1,
+            "ai_waste_switch": 1,
+            "command_type": "ai_engine",
+            "command": f"ai_engine 1 5 --user_data_dir={base_dir}",
+            "command_description": "waste",
+            "stderr": "",
+            "ai_results": (
+                "cam_type=1\n"
+                "mode=5\n"
+                "debug=0\n"
+                f"user_data_dir={base_dir}\n"
+                "gcode_path=\n"
+                "z_height=0.000000\n"
+                "ParseParamFile model_str_=F008\n"
+                "ParseParamFile sys_version_=1.1.0.15\n"
+                "the pid is alive...!\n"
+                "flag = 0\n"
+                f"input = {base_dir}/ai_image/sub_capture.bmp\n"
+                "AI_upload_mode = 1\n"
+                "{\"reqId\":\"1722419562737\",\"dn\":\"00000000000000\",\"code\":\"key609\",\"data\":\"0.000000|1722419562.736825|/usr/data/ai_image/ai_property/F008-waste-2024_7_31_17_52_42.jpg\\n\"}\n"
+                "output width: 1600, height: 1200\n"
+                f"output = {base_dir}/ai_image/sub_processed_ai_waste_mode.jpg\n"
+                f"ai detection completed, cnt = {cnt}\n"
+                "num / re_label / re_prob / re_obj_rect_x / re_obj_rect_y / re_obj_rect_width / re_obj_rect_height\n"
+                f"{detection_results_str}"
+            ),
+            "max_re_prob": 0.0,
+            "normalized_total_area": 0.0,
+            "output_width": 0,
+            "output_height": 0
         }
         result_stdout = self.cx_ai_engine_status["ai_results"]
         ai_results = self.process_waste_ai_detect_result(result_stdout)
@@ -527,8 +622,7 @@ class LoadAI:
         logging.info(json_output_str)
         
     def get_status(self, eventtime):
-        # user_print_refer = "/mnt/UDISK/creality/userdata/config/user_print_refer.json"
-        # ai_control_values = extract_ai_control_prefer_values(user_print_refer, ["switch", "wasteSwitch"])
+        # ai_control_values = self.extract_ai_control_prefer_values(self.user_print_refer_path, ["switch", "wasteSwitch"])
         # self.ai_switch = ai_control_values.get("switch") if ai_control_values else None
         # self.ai_waste_switch = ai_control_values.get("wasteSwitch") if ai_control_values else None
         # self.cx_ai_engine_status["ai_switch"] = self.ai_switch

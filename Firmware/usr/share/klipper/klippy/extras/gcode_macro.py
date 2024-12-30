@@ -212,10 +212,14 @@ class GCodeMacro:
         kwparams['params'] = gcmd.get_command_parameters()
         kwparams['rawparams'] = gcmd.get_raw_command_parameters()
         self.in_script = True
+        if self.alias == "PAUSE":
+            self.printer.lookup_object('pause_resume').pause_start = True
         try:
             self.template.run_gcode_from_command(kwparams)
         finally:
             self.in_script = False
+            if self.alias == "PAUSE":
+                self.printer.lookup_object('pause_resume').pause_start = False
 
 def load_config_prefix(config):
     return GCodeMacro(config)

@@ -51,6 +51,8 @@ class VirtualSD:
                                             self.handle_shutdown)
         # sdcard state
         sd = config.get('path')
+        self.offset_value = config.getfloat('offset_value', 0.2) # 断电续打偏移补偿值
+        self.forced_leveling = config.getboolean('forced_leveling',  default=False)
         self.sdcard_dirname = os.path.normpath(os.path.expanduser(sd))
         self.current_file = None
         self.file_position = self.file_size = 0
@@ -106,6 +108,8 @@ class VirtualSD:
         self.end_print_state = False
         self.last_layer = 0
         self.is_cancel = False
+        self.bed_mesh_calibate_state = False
+        self.run_bed_mesh_calibate = False
     def handle_shutdown(self):
         if self.work_timer is not None:
             self.must_pause_work = True
@@ -253,6 +257,8 @@ class VirtualSD:
             if self.printer.lookup_object('motor_control').is_ready == False:
                 self.gcode.respond_info("The motor parameters are initializing, Please try again later...")
                 return
+        if self.config.has_section("prtouch_v3") and self.bed_mesh_calibate_state == False and gcmd.get("ISCONTINUEPRINT", False) == False and self.forced_leveling:
+            self.run_bed_mesh_calibate = True
         self.end_print_state = False
         self.print_id = ""
         if self.work_timer is not None:
@@ -292,6 +298,7 @@ class VirtualSD:
 
     def load_gcode_metadata(self, file_path=""):
         self.gcode_metadata = self.get_print_file_metadata(file_path)
+        self.gcode.respond_info("gcode_metadata: %s" % (self.gcode_metadata))
 
     def record_print_history(self, file_path=""):
         try:
@@ -922,6 +929,10 @@ class VirtualSD:
         partial_input = ""
         lines = []
         error_message = None
+        # 判断是否运行热床调平
+        if self.run_bed_mesh_calibate:
+            self.run_bed_mesh_calibate = False
+            self.gcode.run_script("BED_MESH_CALIBRATE_START_PRINT")
         # self.gcode.run_script("G90")
         toolhead = self.printer.lookup_object('toolhead')
         start_time = interval_start_time = self.reactor.monotonic()

@@ -23,7 +23,7 @@ USER_DATA_DIR=/mnt/UDISK
 DELAY_IMAGE_VIDEO_DIR=$USER_DATA_DIR/creality/userdata/delay_image/video
 LOG_DIR=$USER_DATA_DIR/creality/userdata/log
 FRONTEND_DOWNLOADS_DIR=/usr/share/frontend/downloads
-HUMBNAIL_DIR=/tmp/creality/local_gcode/humbnail
+HUMBNAIL_DIR=$USER_DATA_DIR/creality/local_gcode/humbnail
 ORIGINAL_DIR=/tmp/creality/original
 DEFDATA_DIR=/etc/sysConfig/defData
 
@@ -34,8 +34,8 @@ create_dirs() {
     [ -d $ORIGINAL_DIR ] || mkdir -p $ORIGINAL_DIR
     [ -d $DELAY_IMAGE_VIDEO_DIR ] || mkdir -p $DELAY_IMAGE_VIDEO_DIR
     [ -d $FRONTEND_DOWNLOADS_DIR -a -d $HUMBNAIL_DIR -a -d $ORIGINAL_DIR -a -d $DEFDATA_DIR ]\
-         && { ln -s $ORIGINAL_DIR $FRONTEND_DOWNLOADS_DIR; ln -s $HUMBNAIL_DIR $FRONTEND_DOWNLOADS_DIR;\
-         ln -s $DEFDATA_DIR $FRONTEND_DOWNLOADS_DIR; ln -s $DELAY_IMAGE_VIDEO_DIR $FRONTEND_DOWNLOADS_DIR;}
+         && { ln -sf $ORIGINAL_DIR $FRONTEND_DOWNLOADS_DIR; ln -sf $HUMBNAIL_DIR $FRONTEND_DOWNLOADS_DIR;\
+         ln -sf $DEFDATA_DIR $FRONTEND_DOWNLOADS_DIR; ln -sf $DELAY_IMAGE_VIDEO_DIR $FRONTEND_DOWNLOADS_DIR;}
 
 }
 

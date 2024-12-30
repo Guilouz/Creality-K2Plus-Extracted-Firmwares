@@ -175,7 +175,10 @@ class BELT_MDL:
     def set_place(self):         #设置滑块绝对位置
         self.gcode.respond_info("ACK_mdl_pos")
         if((self.mdl.current_place==0xffffffff)):
-                raise self.printer.command_error("""{"code":"key710", "msg":"Belt tension module strain gauge not calibrated abnormal: '%s' set_place_error", "values": []}"""% (self.name))
+            if self.name == 'mdlx':
+                raise self.printer.command_error("""{"code":"key714", "msg":"Belt tension module strain gauge not calibrated abnormal: '%s' set_place_error", "values": []}"""% (self.name))
+            if self.name == 'mdly':
+                raise self.printer.command_error("""{"code":"key715", "msg":"Belt tension module strain gauge not calibrated abnormal: '%s' set_place_error", "values": []}"""% (self.name))
         self.target_move = self.target_place - self.mdl.current_place
         self.mdl.current_place = self.target_place
         movedir = 1 if self.target_move>0 else 0
@@ -194,18 +197,25 @@ class BELT_MDL:
         while(1):
             movetimes += 1 
             self.gcode.respond_info("times:%s"%movetimes)
-            if(movetimes > 99):
-                self.gcode.respond_info("ACK_mdl_pos error! timesout")
-                raise self.printer.command_error("""{"code":"key711", "msg":"Belt tensioning timeout: '%s'", "values": []}"""% (self.name))
-                break
+            if(movetimes > 180):                                      #调节次数超过180次，说明丝杆严重非线性导致调节失败，抛出异常
+                if self.name == 'mdlx':
+                    raise self.printer.command_error("""{"code":"key718", "msg":"Belt tensioning timeout: '%s'", "values": []}"""% (self.name))
+                if self.name == 'mdly':
+                    raise self.printer.command_error("""{"code":"key719", "msg":"Belt tensioning timeout: '%s'", "values": []}"""% (self.name))
             aimpull = self.target_tension - self.mdl.current_tension   #获得拉力期望差距值
             aimpull = abs(aimpull)                                     #取绝对值
             aimpull = 10 if aimpull > 10 else aimpull                  #限幅
-            aimmove = int(aimpull) + 2                         #非线性算法，使得差距大时运动行程大，差距小时运动行程小
+            aimmove = int(aimpull) + 2                                 #非线性算法，使得差距大时运动行程大，差距小时运动行程小
             if(aimmove > movetimes):                                   #位移行程随调节次数衰减，避免丝杆非线性导致的震荡，强行收敛
                 aimmove = aimmove - movetimes                          #根据调节次数强行衰减位移量，提高精度
-            if(movetimes > 50):                                        #前50次不能调整成功，说明出现丝杆非线性导致的震荡
-                aimmove = 2                                            #以最小步数进行微调，以抵抗非线性带来的震荡
+            elif(movetimes > 90):                                      #前80次不能调整成功，说明出现丝杆严重非线性导致的震荡
+                aimmove = 1                                            #以最小步数进行微调，以抵抗非线性带来的震荡，提高精度
+            elif(movetimes > 50):                                      #前50次不能调整成功，说明出现丝杆非线性导致的震荡  
+                aimmove = 2                                            #此处的aimmove是调节步长，步长越小，调节越精确，但调节次数越多时间越长
+            elif(movetimes > 30):                                      #前30次不能调整成功，说明出现丝杆非线性导致的震荡
+                aimmove = 3                                            #每种步长的调节总长度都要比前一种步长的调节总长度大，以保证覆盖调节范围
+            elif(movetimes > 20):                                      #前20次不能调整成功，说明出现丝杆非线性导致的震荡
+                aimmove = 4                                            #以小步数进行微调，以抵抗非线性带来的震荡，提高精度
             if(self.target_tension*(1+self.mdl.mistake) <  self.mdl.current_tension):
                 self.set_move(0,aimmove)
                 self.mdl.current_place = self.mdl.current_place - aimmove
@@ -279,9 +289,9 @@ class BELT_MDL:
 
     def Get_version(self):                   #获取版本号
         sendbuf = self.send_sensor_data(self.sta.read_version_cmd,[])
-        self.gcode.respond_info("sendbuf: %s"%sendbuf)
+        # self.gcode.respond_info("sendbuf: %s"%sendbuf)
         uartbuf = self.send_data(sendbuf) 
-        self.gcode.respond_info("resetbuf: %s"%uartbuf)
+        # self.gcode.respond_info("resetbuf: %s"%uartbuf)
         redata = self.recv_sensor_data(uartbuf)
         if(redata[0] == 0):
             self.gcode.respond_info("reset:start error")
@@ -299,9 +309,9 @@ class BELT_MDL:
 
     def Get_flash(self,flash_num):                   #获取flash信息
         sendbuf = self.send_sensor_data(self.sta.read_flash_cmd,[flash_num])
-        self.gcode.respond_info("sendbuf: %s"%sendbuf)
+        # self.gcode.respond_info("sendbuf: %s"%sendbuf)
         uartbuf = self.send_data(sendbuf)
-        self.gcode.respond_info("resetbuf: %s"%uartbuf)
+        # self.gcode.respond_info("resetbuf: %s"%uartbuf)
         redata = self.recv_sensor_data(uartbuf)
         if(redata[0] == 0):
             self.gcode.respond_info("reset:start error")
@@ -342,16 +352,19 @@ class BELT_MDL:
             self.gcode.respond_info("idl_adc:%s"%self.mdl.idl_adc)
             self.gcode.respond_info("full_adc:%s"%self.mdl.full_adc)
             if((self.mdl.current_place==0xffffffff)|(self.mdl.idl_adc==0xffffffff)|(self.mdl.full_adc==0xffffffff)):
-                raise self.printer.command_error("""{"code":"key710", "msg":"Belt tension module strain gauge not calibrated abnormal: '%s'", "values": []}"""% (self.name))
+                if self.name == 'mdlx':
+                    raise self.printer.command_error("""{"code":"key714", "msg":"Belt tension module strain gauge not calibrated abnormal: '%s'", "values": []}"""% (self.name))
+                if self.name == 'mdly':
+                    raise self.printer.command_error("""{"code":"key715", "msg":"Belt tension module strain gauge not calibrated abnormal: '%s'", "values": []}"""% (self.name))
         pass
 
     def write_flash_buf(self,flash_num,flash_data):   #写入flash信息，写入数据数量+数据内容
         flash_data_buf = [flash_num]
         flash_data_buf.extend(flash_data)
         sendbuf = self.send_sensor_data(self.sta.write_flash_cmd,flash_data_buf)
-        self.gcode.respond_info("sendbuf: %s"%sendbuf)
+        # self.gcode.respond_info("sendbuf: %s"%sendbuf)
         uartbuf = self.send_data(sendbuf)
-        self.gcode.respond_info("resetbuf: %s"%uartbuf)
+        # self.gcode.respond_info("resetbuf: %s"%uartbuf)
         redata = self.recv_sensor_data(uartbuf)
         if(redata[0] == 0):
             self.gcode.respond_info("reset:start error")
@@ -407,16 +420,16 @@ class BELT_MDL:
                 return 1     #flash写入成功，写读数据一致
             else:
                 return -1    #flash写入失败，写读数据不一致
-            self.gcode.respond_info("current_place:%s"%flash_data_num0)
-            self.gcode.respond_info("idl_adc:%s"%flash_data_num1)
-            self.gcode.respond_info("full_adc:%s"%flash_data_num2)
+            # self.gcode.respond_info("current_place:%s"%flash_data_num0)
+            # self.gcode.respond_info("idl_adc:%s"%flash_data_num1)
+            # self.gcode.respond_info("full_adc:%s"%flash_data_num2)
         pass 
 
     def get_adc_buf(self):                       #获取ADC数据
         sendbuf = self.send_sensor_data(self.sta.read_adc_cmd,[])         
-        self.gcode.respond_info("sendbuf: %s"%sendbuf)
+        # self.gcode.respond_info("sendbuf: %s"%sendbuf)
         uartbuf = self.send_data(sendbuf)
-        self.gcode.respond_info("resetbuf: %s"%uartbuf)
+        # self.gcode.respond_info("resetbuf: %s"%uartbuf)
         redata = self.recv_sensor_data(uartbuf)
         if(redata[0] == 0):
             self.gcode.respond_info("reset:start error")
@@ -446,9 +459,9 @@ class BELT_MDL:
         set_move_buf = [dir]
         set_move_buf.extend(rang_buf)
         sendbuf = self.send_sensor_data(self.sta.move_slider_cmd,set_move_buf)
-        self.gcode.respond_info("sendbuf: %s"%sendbuf)
+        # self.gcode.respond_info("sendbuf: %s"%sendbuf)
         uartbuf = self.send_data(sendbuf)
-        self.gcode.respond_info("resetbuf: %s"%uartbuf)
+        # self.gcode.respond_info("resetbuf: %s"%uartbuf)
         redata = self.recv_sensor_data(uartbuf)
         if(redata[0] == 0):
             self.gcode.respond_info("reset:start error")
@@ -486,7 +499,21 @@ class BELT_MDL:
 
     def init_adc_to_num(self):    #根据现有的参数对adc和拉力做数据拟合
         if((self.mdl.current_place==0xffffffff)|(self.mdl.idl_adc==0xffffffff)|(self.mdl.full_adc==0xffffffff)):
-                raise self.printer.command_error("""{"code":"key710", "msg":"Belt tension module strain gauge not calibrated abnormal: '%s'adc_to_num_error", "values": []}"""% (self.name))
+            if self.name == 'mdlx':
+                raise self.printer.command_error("""{"code":"key714", "msg":"Belt tension module strain gauge not calibrated abnormal: '%s'adc_to_num_error", "values": []}"""% (self.name))
+            if self.name == 'mdly':
+                raise self.printer.command_error("""{"code":"key715", "msg":"Belt tension module strain gauge not calibrated abnormal: '%s'adc_to_num_error", "values": []}"""% (self.name))
+        if((self.mdl.idl_adc==0x00000000)|(self.mdl.full_adc==0x00000000)):
+            if self.name == 'mdlx':
+                raise self.printer.command_error("""{"code":"key720", "msg":"The calibration value of the strain gauge is zero: '%s'calibration_num_error", "values": []}"""% (self.name))
+            if self.name == 'mdly':
+                raise self.printer.command_error("""{"code":"key721", "msg":"The calibration value of the strain gauge is zero: '%s'calibration_num_error", "values": []}"""% (self.name))
+        adc_difference = abs(self.mdl.idl_adc-self.mdl.full_adc)
+        if(adc_difference<30000):
+            if self.name == 'mdlx':
+                raise self.printer.command_error("""{"code":"key720", "msg":"The calibration value of the strain gauge is too small: '%s'calibration_num_error", "values": []}"""% (self.name))
+            if self.name == 'mdly':
+                raise self.printer.command_error("""{"code":"key721", "msg":"The calibration value of the strain gauge is too small: '%s'calibration_num_error", "values": []}"""% (self.name))
         xd = [self.mdl.idl_adc,self.mdl.full_adc]
         yd = [self.mdl.adjustnum1,self.mdl.adjustnum2]
         xn = np.array(xd)
@@ -508,7 +535,10 @@ class BELT_MDL:
         self.mdl.current_tension = adc_num
         self.gcode.respond_info("pull_num:%s"%adc_num)
         if((adc_num>600)|(adc_num<-300)):     #张紧力大于600，小于-300时，张紧力过于异常，报错
-                raise self.printer.command_error("""{"code":"key710", "msg":"Abnormal belt tension: '%s' pull_num_error", "values": []}"""% (self.name))
+            if self.name == 'mdlx':
+                raise self.printer.command_error("""{"code":"key716", "msg":"Abnormal belt tension: '%s' pull_num_error", "values": []}"""% (self.name))
+            if self.name == 'mdly':
+                raise self.printer.command_error("""{"code":"key717", "msg":"Abnormal belt tension: '%s' pull_num_error", "values": []}"""% (self.name))
         return adc_num
         pass
     
@@ -539,7 +569,10 @@ class BELT_MDL:
         # com = COM()
         if(rec_data == None):          #判断接收数据是否为空
             self.gcode.respond_info("reset:resetbuf is None")
-            raise self.printer.command_error("""{"code":"key710", "msg":"Communication abnormality of belt automatic tensioning module 485: '%s'", "values": []}"""% (self.name))
+            if self.name == 'mdlx':
+                raise self.printer.command_error("""{"code":"key712", "msg":"Communication abnormality of belt automatic tensioning module 485: '%s'", "values": []}"""% (self.name))
+            if self.name == 'mdly':
+                raise self.printer.command_error("""{"code":"key713", "msg":"Communication abnormality of belt automatic tensioning module 485: '%s'", "values": []}"""% (self.name))
             #通信数据为空，异常报错，结束当前指令，提示异常模块
             return 0,-1,0
         if(len(rec_data)<3):           #判断数据长度是否正常

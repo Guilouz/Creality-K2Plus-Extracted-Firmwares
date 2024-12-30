@@ -123,22 +123,22 @@ copy_config()
 
         "F012")
             if [ "$board" = "CR0CN240319C13" ]; then
-                config_dir=K2_Pro_CR0CN240319C13
+                config_dir=F012_CR0CN240319C13
             else
                 config_dir=
             fi
 
-            gcode_dir=K2_Pro
+            gcode_dir=F012
             ;;
 
         "F021")
             if [ "$board" = "CR0CN240319C13" ]; then
-                config_dir=K2_CR0CN240319C13
+                config_dir=F021_CR0CN240319C13
             else
                 config_dir=
             fi
 
-            gcode_dir=K2
+            gcode_dir=F021
             ;;
 
         *)

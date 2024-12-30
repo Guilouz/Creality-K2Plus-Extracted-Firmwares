@@ -29,10 +29,10 @@ set_hostname_with_model_mac()
                 model="K2Plus"
                 ;;
             "F012")
-                model="K2Pro"
+                model="F012"
                 ;;
             "F021")
-                model="K2"
+                model="F021"
                 ;;
             *)
                 ;;

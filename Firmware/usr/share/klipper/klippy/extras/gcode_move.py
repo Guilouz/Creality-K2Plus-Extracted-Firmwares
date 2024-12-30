@@ -494,8 +494,10 @@ class GCodeMove:
             else:
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE BED_MESH_PROFILE LOAD='default'")
                 gcode.run_script_from_command('BED_MESH_PROFILE LOAD="default"')
-                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE toolhead.set_position:%s" % str([x, y, z, self.last_position[3]]))
-                toolhead.set_position([x, y, z, self.last_position[3]], homing_axes=(2,))
+                # 补偿0.2, 测试验证首层虚层的问题
+                offset_value = self.printer.lookup_object('virtual_sdcard').offset_value
+                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE toolhead.set_position:%s" % str([x, y, z+offset_value, self.last_position[3]]))
+                toolhead.set_position([x, y, z+offset_value, self.last_position[3]], homing_axes=(2,))
             speed = self.speed
             self.last_position[:3] = state['last_position'][:3]
             box = self.printer.lookup_object("box", None)

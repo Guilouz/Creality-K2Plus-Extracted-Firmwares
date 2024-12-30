@@ -22,6 +22,9 @@ get_flash_type()
 
 swupdate_cmd()
 {
+    local retry_times=0
+    local max_times=3
+    local failed=0
     while true
     do
         swu_param=$(fw_printenv -n swu_param 2>/dev/null)
@@ -48,6 +51,17 @@ swupdate_cmd()
 
         echo "## swupdate -v $check_version_para $swu_param -e $swu_software,$swu_mode ##"
         swupdate -v $check_version_para $swu_param -e "$swu_software,$swu_mode" >> "$swupdate_log_file" 2>&1
+        failed=$?
+        echo "#### update failed $failed" >> "$swupdate_log_file"
+	if [ $failed -ne 0 ]; then
+	   retry_times=$(($retry_times+1))
+           if [ $retry_times -gt $max_times ]; then
+               break
+           else
+               echo "#### update retry_times start... $retry_times" >> "$swupdate_log_file"
+               continue
+           fi
+        fi
 
         swu_next=$(fw_printenv -n swu_next 2>/dev/null)
         echo "swu_next: ##$swu_next##"

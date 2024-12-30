@@ -77,23 +77,22 @@ class Heater:
         reactor.update_timer(self._chamber_heater_do_query_timer, reactor.NOW)
     def _handle_check_chamber_heater(self, eventtime):
         gcode = self.printer.lookup_object('gcode')
-        fan_speed = 0
+        num = 0
         fan_feedback = None
         if self.config.has_section('fan_feedback'):
             fan_feedback = self.printer.lookup_object('fan_feedback')
-            fan_speed = fan_feedback.cx_fan_status.get("fan0_speed", 0)
-        # PTC在加热 但是PTC风扇转速为0时 关闭PTC加热
-        if self.target_temp and fan_speed <= 0 and fan_feedback and self.control.temp_coff>0 and self.control.count==20:
-            gcode.respond_info("chamber_heater 1 target_temp:%s fan_speed:%s temp_coff:%s" %(self.target_temp, fan_speed, self.control.temp_coff))
-            self.printer.get_reactor().pause(self.printer.get_reactor().monotonic() + 5.0)
-            # 再次判断
-            if self.target_temp and fan_feedback.cx_fan_status.get("fan0_speed", 0) <= 0 and self.control.temp_coff>0 and self.control.count==20:
-                gcode.respond_info("chamber_heater 2 target_temp:%s fan_speed:%s temp_coff:%s" %(self.target_temp, fan_feedback.cx_fan_status.get("fan0_speed", 0), self.control.temp_coff))
-                self.stop_heating = True
-                gcode._respond_error("""{"code":"key519", "msg":"PTC fan_speed is 0, turn off PTC heaters", "values":[]}""")
-                gcode.run_script_from_command("M141 S0")
-            else:
-                gcode.respond_info("chamber_heater 3 target_temp:%s fan_speed:%s temp_coff:%s" %(self.target_temp, fan_feedback.cx_fan_status.get("fan0_speed", 0), self.control.temp_coff))                
+            if self.control.heating and self.last_pwm_value > 0 and self.target_temp and fan_feedback.cx_fan_status.get("fan0_speed", 0) == 0:
+                for _ in range(12):
+                    # 判断连续12s内风扇是否都是处于停止状态
+                    self.printer.get_reactor().pause(self.printer.get_reactor().monotonic() + 1.0)
+                    if self.control.heating and self.last_pwm_value > 0 and self.target_temp and fan_feedback.cx_fan_status.get("fan0_speed", 0) == 0:
+                        num += 1
+                    else:
+                        break
+                if num == 12:
+                    self.stop_heating = True
+                    gcode._respond_error("""{"code":"key519", "msg":"PTC fan_speed is 0, turn off PTC heaters", "values":[]}""")
+                    gcode.run_script_from_command("M141 S0")               
         return eventtime + 1.0
 
     def set_pwm(self, read_time, value):
@@ -272,23 +271,32 @@ class ControlBangBang:
                 # 热床加热中,不允许开启PTC加热, PTC加热暂停，优先保证热床加热，热床加热完成，再开始PTC加热
                 self.temp_coff = 0
                 self.heater.start_heating_seconds = 0
-            elif is_chamber_heater and self.heater.start_heating_seconds < 200:
+            elif is_chamber_heater and self.temp_coff == 0:
+                self.temp_coff = 1.0
+            elif is_chamber_heater and temp < target_temp-self.max_delta and self.heater.start_heating_seconds < 200:
                 # PTC加热前一分钟内使用50%功率加热 why is 200? REPORT_TIME = 0.300 60/REPORT_TIME=200
                 self.heater.start_heating_seconds += 1
                 self.temp_coff = 0.5
-            elif is_chamber_heater and heater_bed_last_pwm_value > 0.75 and self.temp_coff > 0.5:
-                # 如果热床的PID输出功率超过75%，则PTC加热功率减低到50%，直到热床输出功率降低到75%以下
-                self.temp_coff = 0.5
-            elif is_chamber_heater and self.heater.start_heating_seconds == 200:
-                # 一分钟后可以开启100%功率加热
-                if temp < target_temp - 1.5:
-                    self.temp_coff = 1.0      
+            # elif is_chamber_heater and heater_bed_last_pwm_value > 0.75 and self.temp_coff > 0.5:
+            #     # 如果热床的PID输出功率超过75%，则PTC加热功率减低到50%，直到热床输出功率降低到75%以下
+            #     self.temp_coff = 0.5
+            # elif is_chamber_heater and self.heater.start_heating_seconds == 200:
+            #     # 一分钟后可以开启100%功率加热
+            #     if temp < target_temp - 1.5:
+            #         self.temp_coff = 1.0      
             # 使用count来计数PTC加热的时间,count=20的时候,大约是连续加热了6s
             # temp_coff == 0 时对count进行重置
             if is_chamber_heater and target_temp and self.count < 20 and self.temp_coff > 0:
                 self.count += 1
             elif is_chamber_heater and target_temp and self.temp_coff == 0:
                 self.count = 0
+            # # 到达目标温度附近时, 加热功率调小到12%
+            # if is_chamber_heater and temp > target_temp+self.max_delta:
+            #     self.temp_coff = 0
+            # elif is_chamber_heater and temp > target_temp:
+            #     self.temp_coff = 0.12
+            # elif is_chamber_heater and temp > target_temp-self.max_delta:
+            #     self.temp_coff = 0.2
             # PTC在加热 但是PTC风扇转速为0时 关闭PTC加热
             if is_chamber_heater and self.heater.stop_heating:
                 self.temp_coff = 0
@@ -298,14 +306,11 @@ class ControlBangBang:
             if target_temp > 0.1:
                 if self.prev_temp < temp:
                     self.prev_temp = temp
-                if is_chamber_heater and target_temp and self.count < 20:
-                    self.count += 1
             else:
                 self.prev_temp = 0.
                 self.temp_coff = 1.0
-                if is_chamber_heater:
-                    self.count = 0
             if is_chamber_heater:
+                self.count = 0
                 self.heater.start_heating_seconds = 0 
 
     def check_busy(self, eventtime, smoothed_temp, target_temp):

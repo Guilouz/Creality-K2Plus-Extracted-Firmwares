@@ -7,8 +7,8 @@ SourceName: libwebsockets-openssl
 License: LGPL-2.1+exception
 LicenseFiles: LICENSE
 Section: libs
-SourceDateEpoch: 1709125077
+SourceDateEpoch: 1734610969
 Maintainer: Karl Palsson <karlp@etactica.com>
 Architecture: arm_cortex-a7_neon
-Installed-Size: 147024
+Installed-Size: 143303
 Description:  libwebsockets (OpenSSL)

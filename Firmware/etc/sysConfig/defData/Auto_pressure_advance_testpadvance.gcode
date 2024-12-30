@@ -13,21 +13,22 @@
 M140 S60.000000
 M190 S60.000000
 
-M204 S5000
-
 M109 S220.000000
 G90
 G21
-G92 E0 ; Reset Extruder
-;G1 originX originY F12000
-G92 X0 Y0
-;TNumber
-G1 F2400 E-0.8
 M220 S100
 M221 S100
 M205 X10 Y10
+;TNumber
+M204 S5000
 G1 Z3.0 F600 
 M83 ; use relative distances for extrusion
+
+G92 E0 ; Reset Extruder
+G1 F2400 E-0.8
+;G1 originX originY F12000
+G92 X0 Y0
+
 G1 Y155 F12000
 G1 X0 F12000
 ;G1 X50 Y2 F6000

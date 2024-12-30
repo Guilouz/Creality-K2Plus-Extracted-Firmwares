@@ -1,10 +1,10 @@
 Package: em_detection
-Version: c23b72c
+Version: 14f16c1
 Depends: libc, librt, libpthread, libpthread, librt, libstdcpp6, opencv
 Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/em_detection
 SourceName: em_detection
 Section: creality
 SourceDateEpoch: 1716829383
 Architecture: arm_cortex-a7_neon
-Installed-Size: 52109
+Installed-Size: 52255
 Description:  em_detection

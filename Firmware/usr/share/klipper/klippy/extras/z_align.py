@@ -217,13 +217,14 @@ class Zalign:
             self.cur_retries += 1
         if toolhead.G29_flag == False:
             # 补偿0.2, 测试验证首层虚层的问题
-            offset_value = 0.2
+            offset_value = self.printer.lookup_object('virtual_sdcard').offset_value
             now_pos = toolhead.get_position()
             real_zmax = self.read_real_zmax()
             za = real_zmax + offset_value
             # 在恢复双Z校准值前,先恢复设置Z轴最大高度值
             toolhead.set_position([now_pos[0], now_pos[1], za, now_pos[3]], homing_axes=(2,))
             logging.info("ZDOWN G29_flag is Fasle, real_zmax:%s offset_value:%s za:%s now_pos:%s" % (real_zmax, offset_value, za,str(now_pos)))
+            self.gcode.run_script_from_command("G91\nG1 Z-10 F600\nG90")
             self.gcode.run_script_from_command("M400")
             self.gcode.run_script_from_command("ADJUST_STEPPERS")
             self.gcode.run_script_from_command("M400")

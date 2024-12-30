@@ -1,10 +1,10 @@
 Package: mcu_update
-Version: 017c81d
+Version: ae2ae3b
 Depends: libc, librt, libpthread, libcrlog
 Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/mcu_update
 SourceName: mcu_update
 Section: creality
 SourceDateEpoch: 1725938263
 Architecture: arm_cortex-a7_neon
-Installed-Size: 23095
+Installed-Size: 23102
 Description:  mcu_update

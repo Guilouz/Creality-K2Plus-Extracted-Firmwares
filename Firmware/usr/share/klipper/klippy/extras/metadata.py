@@ -978,8 +978,13 @@ class Creality(BaseSlicer):
         return layer_count
 
     def parse_filament_type(self) -> Optional[str]:
-        return _regex_find_string(
-            r";Material Type:(\S+)", self.header_data)
+        result = ""
+        filament_type = _regex_find_string(r";Material Type:(\S+)", self.header_data)
+        if not filament_type:
+            filament_type = _regex_find_string(r"; default_filament_type = (\S+)", self.footer_data)
+        if filament_type:
+            result = filament_type.strip(";")
+        return result
 
     def parse_filament_name(self) -> Optional[str]:
         return _regex_find_string(
@@ -1017,10 +1022,14 @@ class Creality(BaseSlicer):
         flush_volumes_matrix = None
         # Search for flush_multiplier value
         flush_multiplier_match = re.search(r'flush_multiplier\s*=\s*([\d.]+)', self.header_data)
+        if not flush_multiplier_match:
+            flush_multiplier_match = re.search(r'flush_multiplier\s*=\s*([\d.]+)', self.footer_data)
         if flush_multiplier_match:
             flush_multiplier = float(flush_multiplier_match.group(1))
         # Search for flush_volumes_matrix value
         flush_volumes_matrix_match = re.search(r'flush_volumes_matrix\s*=\s*([^;]+)', self.header_data)
+        if not flush_volumes_matrix_match:
+            flush_volumes_matrix_match = re.search(r'flush_volumes_matrix\s*=\s*([^;]+)', self.footer_data)
         if flush_volumes_matrix_match:
             flush_volumes_matrix = [int(x) for x in flush_volumes_matrix_match.group(1).strip().split(',')]
         # return

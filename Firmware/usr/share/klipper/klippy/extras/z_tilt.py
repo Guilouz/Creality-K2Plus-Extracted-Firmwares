@@ -175,6 +175,8 @@ class ZTilt:
         if os.path.exists(self.stepper_adjustment_path):
             os.remove(self.stepper_adjustment_path)  
     def cmd_ADJUST_STEPPERS(self, gcmd):
+        self.stepper_z_adjustment = 0
+        self.stepper_z1_adjustment = 0
         adjustments = self.get_adjustments()
         speed = self.probe_helper.get_lift_speed()
         if adjustments:
