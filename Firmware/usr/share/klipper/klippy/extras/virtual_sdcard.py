@@ -932,7 +932,18 @@ class VirtualSD:
         # 判断是否运行热床调平
         if self.run_bed_mesh_calibate:
             self.run_bed_mesh_calibate = False
-            self.gcode.run_script("BED_MESH_CALIBRATE_START_PRINT")
+            cmd = "BED_MESH_CALIBRATE_START_PRINT"
+            try:
+                # 当前目标温度大于热床调平时的默认温度时,用当前目标温度调平
+                custom_macro = self.printer.lookup_object('custom_macro')
+                heater_bed = self.printer.lookup_object('heater_bed').heater
+                target_temp = heater_bed.target_temp
+                default_bed_temp = custom_macro.default_bed_temp
+                if target_temp > default_bed_temp:
+                    cmd += " BED_TEMP=%s" % target_temp
+            except Exception as err:
+                logging.exception("run_bed_mesh_calibate error: %s" % err)
+            self.gcode.run_script(cmd)
         # self.gcode.run_script("G90")
         toolhead = self.printer.lookup_object('toolhead')
         start_time = interval_start_time = self.reactor.monotonic()

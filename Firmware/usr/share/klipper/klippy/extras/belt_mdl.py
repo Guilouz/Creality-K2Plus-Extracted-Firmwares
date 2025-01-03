@@ -509,11 +509,11 @@ class BELT_MDL:
             if self.name == 'mdly':
                 raise self.printer.command_error("""{"code":"key721", "msg":"The calibration value of the strain gauge is zero: '%s'calibration_num_error", "values": []}"""% (self.name))
         adc_difference = abs(self.mdl.idl_adc-self.mdl.full_adc)
-        if(adc_difference<30000):
-            if self.name == 'mdlx':
-                raise self.printer.command_error("""{"code":"key720", "msg":"The calibration value of the strain gauge is too small: '%s'calibration_num_error", "values": []}"""% (self.name))
-            if self.name == 'mdly':
-                raise self.printer.command_error("""{"code":"key721", "msg":"The calibration value of the strain gauge is too small: '%s'calibration_num_error", "values": []}"""% (self.name))
+        # if(adc_difference<30000):
+        #     if self.name == 'mdlx':
+        #         raise self.printer.command_error("""{"code":"key720", "msg":"The calibration value of the strain gauge is too small: '%s'calibration_num_error", "values": []}"""% (self.name))
+        #     if self.name == 'mdly':
+        #         raise self.printer.command_error("""{"code":"key721", "msg":"The calibration value of the strain gauge is too small: '%s'calibration_num_error", "values": []}"""% (self.name))
         xd = [self.mdl.idl_adc,self.mdl.full_adc]
         yd = [self.mdl.adjustnum1,self.mdl.adjustnum2]
         xn = np.array(xd)

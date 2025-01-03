@@ -269,10 +269,16 @@ class ExcludeObject:
             obj.update(parameters)
 
             if center != None:
-                obj['center'] = json.loads('[%s]' % center)
+                try:
+                    obj['center'] = json.loads('[%s]' % center)
+                except Exception as err:
+                    logging.exception(err)
 
             if polygon != None:
-                obj['polygon'] = json.loads(polygon)
+                try:
+                    obj['polygon'] = json.loads(polygon)
+                except Exception as err:
+                    logging.exception(err)
 
             self._add_object_definition(obj)
 

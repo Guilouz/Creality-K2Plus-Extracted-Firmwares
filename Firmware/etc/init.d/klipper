@@ -208,6 +208,10 @@ copy_config()
         exit 0
     }
 
+    # delete old gcodes
+    rm -f ${GCODE_FILES_DIR}/3DBench_PLA_25m.gcode
+    rm -f ${GCODE_FILES_DIR}/Crealitylogo_PLA_35m.gcode
+
     rsync -a $GCODE_PATH/* ${GCODE_FILES_DIR}/
     sync
 

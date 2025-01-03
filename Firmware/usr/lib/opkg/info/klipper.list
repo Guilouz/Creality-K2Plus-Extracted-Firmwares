@@ -361,7 +361,6 @@
 /usr/share/klipper/klippy/extras/lis2dw.pyc
 /usr/share/klipper/config/generic-mks-sgenl.cfg
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/chardet/chardetect.py
-/usr/share/klipper/gcodes/F008/Crealitylogo_PLA_35m.gcode
 /usr/share/klipper/test/configs/stm32f401.config
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/cachecontrol/cache.pyc
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/distlib/util.pyc
@@ -887,11 +886,11 @@
 /usr/share/klippy-env/lib/python3.9/site-packages/aenum/__init__.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/urllib3/util/__init__.py
 /usr/share/klipper/docs/Delta_Calibrate.md
-/usr/share/klipper/gcodes/F008/3DBench_PLA_25m.gcode
 /usr/share/klipper/docs/Installation.md
 /usr/share/klipper/gcodes/K1_Max/CRtestcube_Hyper PLA_26m51s.gcode
 /usr/share/klipper/test/klippy/pwm.cfg
 /usr/share/klipper/.github/FUNDING.yml
+/usr/share/klipper/gcodes/F008/3DBenchy_PLA_34m9s.gcode
 /usr/share/klipper/klippy/extras/z_align.pyc
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/chardet/mbcharsetprober.pyc
 /usr/share/klipper/klippy/extras/box.py
@@ -1061,6 +1060,7 @@
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/commands/help.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/structures.py
 /usr/share/klipper/docs/_klipper3d/mkdocs-requirements.txt
+/usr/share/klipper/gcodes/F008/Crealitylogo_PLA_32m41s.gcode
 /usr/share/klipper/klippy/extras/tmc2208.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/distlib/manifest.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/html5lib/filters/sanitizer.py

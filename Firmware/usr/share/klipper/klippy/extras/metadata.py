@@ -1127,11 +1127,8 @@ def get_slicer(file_path: str) -> Tuple[BaseSlicer, Dict[str, str]]:
             f.seek(size - READ_SIZE)
             footer_data = f.read()
         elif size > READ_SIZE:
-            if type(slicer) == Creality:
-                footer_data = header_data
-            else:
-                remaining = size - READ_SIZE
-                footer_data = header_data[remaining - READ_SIZE:] + f.read()
+            remaining = size - READ_SIZE
+            footer_data = header_data[remaining - READ_SIZE:] + f.read()
         else:
             footer_data = header_data
         slicer.set_data(header_data, footer_data, size)
