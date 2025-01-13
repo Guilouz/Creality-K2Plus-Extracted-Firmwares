@@ -10,6 +10,30 @@ from .base_info import base_dir, system_info_instance
 VALID_GCODE_EXTS = ['gcode', 'g', 'gco']
 LAYER_KEYS = ["; layer #", ";LAYER:", "; layer:", "; LAYER:", ";AFTER_LAYER_CHANGE", ";LAYER_CHANGE"]
 
+MAINTENANCE_ITEM = {
+    "calibrate" : {
+        "cut_calibration": {"cur_value": 0},
+        "shaper_calibrate": {"cur_value": 0},
+        "belt_tensioning": {"cur_value": 0},
+        },
+    "routine_maintenance" : {
+        "motion_mechanism_lubrication": {"cur_value": 0},
+        "camera_maintenance": {"cur_value": 0},
+        "fan_inspection": {"cur_value": 0}
+        },
+    "machine_wear_parts_replacement": {
+        "nozzle": {"cur_value": 0},
+        "cut": {"cur_value": 0},
+        "machine_teflon_tube": {"cur_value": 0},
+        "wipe_mouth_strip": {"cur_value": 0},
+        "air_filter": {"cur_value": 0}
+        },
+    "cfs_wear_parts_replacement" : {
+        "cfs_teflon_tube": {"cur_value": 0},
+        "cfs_desiccant": {"cur_value": 0}
+    }
+}
+
 def capture(end_print=False, frame=15):
     import subprocess
     python_path = "/usr/share/klippy-env/bin/python"
@@ -49,6 +73,8 @@ class VirtualSD:
         self.printer = config.get_printer()
         self.printer.register_event_handler("klippy:shutdown",
                                             self.handle_shutdown)
+        self.printer.register_event_handler('klippy:ready',
+                self._handle_ready)
         # sdcard state
         sd = config.get('path')
         self.offset_value = config.getfloat('offset_value', 0.2) # 断电续打偏移补偿值
@@ -82,6 +108,8 @@ class VirtualSD:
         self.gcode.register_command(
             "SHOW_GCODE_FLUSH", self.cmd_SHOW_GCODE_FLUSH,
             desc=self.cmd_SHOW_GCODE_FLUSH_help)
+        self.gcode.register_command("CLEAR_EEPROM_INFO", self.cmd_CLEAR_EEPROM_INFO)
+        self.gcode.register_command("SET_MAINTENANCE_ITEM_VARIABLE", self.cmd_SET_MAINTENANCE_ITEM_VARIABLE)
         self.count_G1 = 0 
         self.count_line = 0
         self.do_resume_status = False
@@ -92,6 +120,7 @@ class VirtualSD:
         self.print_file_name_path = os.path.join(base_dir, "creality/userdata/config/print_file_name.json")
         self.speed_mode_path = os.path.join(base_dir, "creality/userdata/config/speed_mode.json")
         self.flow_rate_path = os.path.join(base_dir, "creality/userdata/config/flow_rate.json")
+        self.maintenance_item_path = os.path.join(base_dir, "creality/userdata/config/maintenance_item.json")
         self.print_first_layer = False
         self.first_layer_stop = False
         self.count_M204 = 0
@@ -110,6 +139,239 @@ class VirtualSD:
         self.is_cancel = False
         self.bed_mesh_calibate_state = False
         self.run_bed_mesh_calibate = False
+        self.layer_key = ""
+        self.lock = threading.Lock()
+        self.is_move_out_of_range_in_printing = False
+    def _handle_ready(self):
+        self._maintenance_item_timer = self.reactor.register_timer(self.update_maintenance_item_timer)
+        self.reactor.update_timer(self._maintenance_item_timer, self.reactor.NOW)
+        self.printer.register_event_handler('v_sd:update_cut_used', self.update_cut_used)
+        self.printer.register_event_handler('v_sd:update_filament_used', self.update_filament_used)
+        self.printer.register_event_handler('v_sd:cancel_power_loss_update_filament_used', self.cancel_power_loss_update_filament_used)
+        self.printer.register_event_handler('v_sd:reset_cut_calibration_count', self.reset_cut_calibration_count)
+        self.printer.register_event_handler('v_sd:reset_shaper_calibrate_count', self.reset_shaper_calibrate_count)
+        webhooks = self.printer.lookup_object('webhooks')
+        webhooks.register_endpoint("get_maintenance_item", self.get_maintenance_item)
+    def notify_maintenance_item(self):
+        maintenance_item_param = self.printer.lookup_object("gcode_macro MAINTENANCE_ITEM_PARAM", None)
+        if maintenance_item_param and self.config.has_section("gcode_macro MAINTENANCE_ITEM") and os.path.exists(self.maintenance_item_path):
+            try:
+                obj = self.printer.lookup_object("gcode_macro MAINTENANCE_ITEM")
+                with open(self.maintenance_item_path, "r") as f:
+                    result = json.loads(f.read())
+                    result = self.maintenance_item_add_threshold(result)
+                    result = self.maintenance_item_add_timeout(result)
+                    obj.variables = result
+            except Exception as err:
+                logging.exception(err)
+    def calculate_filament_weight(self, filament_used, filament_diameter=1.75, filament_density=1.25e-3):
+        import math
+        # 将耗材直径转为半径
+        radius = filament_diameter / 2
+        # 计算耗材体积 (V = πr^2h)
+        volume = math.pi * (radius ** 2) * filament_used
+        # 计算耗材重量 体积*密度
+        weight = volume * filament_density
+        return weight
+    def update_cut_used(self):
+        self.update_maintenance_item(update_cut_used=True)
+    def update_filament_used(self):
+        filament_used = self.printer.lookup_object('print_stats').filament_used
+        if filament_used > 0:
+            weight = self.calculate_filament_weight(filament_used)
+            self.update_maintenance_item(update_filament_used=True, filament_used=weight)
+    def cancel_power_loss_update_filament_used(self):
+        filament_used = 0
+        try:
+            if os.path.exists(self.print_file_name_path):
+                with open(self.print_file_name_path, "r") as f:
+                    ret = json.loads(f.read())
+                    filament_used = ret.get("filament_used", 0)
+            if filament_used > 0:
+                weight = self.calculate_filament_weight(filament_used)
+                self.update_maintenance_item(update_filament_used=True, filament_used=weight)
+        except Exception as err:
+            pass
+    def reset_cut_calibration_count(self):
+        self.gcode.run_script_from_command("SET_MAINTENANCE_ITEM_VARIABLE NAME=calibrate VARIABLE=cut_calibration VALUE=0")
+    def reset_shaper_calibrate_count(self):
+        self.gcode.run_script_from_command("SET_MAINTENANCE_ITEM_VARIABLE NAME=calibrate VARIABLE=shaper_calibrate VALUE=0")
+    def update_maintenance_item_timer(self, eventtime):
+        # 通知到订阅端
+        self.notify_maintenance_item()
+        try:
+            if not os.path.exists(self.maintenance_item_path):
+                with open(self.maintenance_item_path, 'w') as f:
+                    f.write(json.dumps(MAINTENANCE_ITEM))
+                    f.flush()
+            print_stats = self.printer.lookup_object('print_stats')
+            if print_stats.state == "printing":
+                self.update_maintenance_item()
+        except Exception as e:
+            logging.error("Error in update_maintenance_item: %s" % str(e))
+        return eventtime + 60.0
+    def update_maintenance_item(self, update_cut_used=False, update_filament_used=False, filament_used=0, variable_update=False, update_item_name="", variable_update_obj="", reset_value=0):
+        interval = 60
+        with self.lock:
+            if not os.path.exists(self.maintenance_item_path):
+                with open(self.maintenance_item_path, 'w') as f:
+                    f.write(json.dumps(MAINTENANCE_ITEM))
+                    f.flush()
+            else:
+                result = {}
+                try:
+                    with open(self.maintenance_item_path, 'r') as f:
+                        result = json.loads(f.read())
+                    if not result:
+                        os.remove(self.maintenance_item_path)
+                        return
+                    # 重设记录值
+                    if variable_update:
+                        if result.get(update_item_name) and result.get(update_item_name).get(variable_update_obj):
+                            result[update_item_name][variable_update_obj]["cur_value"] = reset_value
+                            with open(self.maintenance_item_path, 'w') as f:
+                                f.write(json.dumps(result))
+                                f.flush()
+                            # 通知到订阅端
+                            self.notify_maintenance_item()
+                        return
+                    # 更新值
+                    result = self.check_item(result=result, interval=interval, update_cut_used=update_cut_used, update_filament_used=update_filament_used, filament_used=filament_used)
+                    with open(self.maintenance_item_path, 'w') as f:
+                        f.write(json.dumps(result))
+                        f.flush()
+                    # 通知到订阅端
+                    self.notify_maintenance_item()
+                except Exception as err:
+                    logging.error("open maintenance_item_path err:%s" % str(err))
+                    os.remove(self.maintenance_item_path)
+    def check_item(self, result, interval, update_cut_used, update_filament_used, filament_used=0, max_value=999999999999999):
+        if update_cut_used:
+            # 更新切刀使用次数
+            if result["calibrate"]["cut_calibration"]["cur_value"] < max_value:
+                result["calibrate"]["cut_calibration"]["cur_value"] += 1
+            if result["machine_wear_parts_replacement"]["cut"]["cur_value"] < max_value:
+                result["machine_wear_parts_replacement"]["cut"]["cur_value"] += 1
+            return result
+        if update_filament_used:
+            # 更新耗材使用重量
+            if result["machine_wear_parts_replacement"]["nozzle"]["cur_value"] < max_value:
+                result["machine_wear_parts_replacement"]["nozzle"]["cur_value"] += filament_used
+            return result
+        # 更新打印时长
+        if result["calibrate"]["shaper_calibrate"]["cur_value"] < max_value:
+            result["calibrate"]["shaper_calibrate"]["cur_value"] += interval
+        if result["calibrate"]["belt_tensioning"]["cur_value"] < max_value:
+            result["calibrate"]["belt_tensioning"]["cur_value"] += interval
+        if result["routine_maintenance"]["motion_mechanism_lubrication"]["cur_value"] < max_value:
+            result["routine_maintenance"]["motion_mechanism_lubrication"]["cur_value"] += interval
+        if result["routine_maintenance"]["camera_maintenance"]["cur_value"] < max_value:
+            result["routine_maintenance"]["camera_maintenance"]["cur_value"] += interval
+        if result["routine_maintenance"]["fan_inspection"]["cur_value"] < max_value:
+            result["routine_maintenance"]["fan_inspection"]["cur_value"] += interval
+        if result["machine_wear_parts_replacement"]["machine_teflon_tube"]["cur_value"] < max_value:
+            result["machine_wear_parts_replacement"]["machine_teflon_tube"]["cur_value"] += interval
+        if result["machine_wear_parts_replacement"]["wipe_mouth_strip"]["cur_value"] < max_value:
+            result["machine_wear_parts_replacement"]["wipe_mouth_strip"]["cur_value"] += interval
+        if result["machine_wear_parts_replacement"]["air_filter"]["cur_value"] < max_value:
+            result["machine_wear_parts_replacement"]["air_filter"]["cur_value"] += interval
+        if not self.check_cfs_enable():
+            return result
+        if result["cfs_wear_parts_replacement"]["cfs_teflon_tube"]["cur_value"] < max_value:
+            result["cfs_wear_parts_replacement"]["cfs_teflon_tube"]["cur_value"] += interval
+        if result["cfs_wear_parts_replacement"]["cfs_desiccant"]["cur_value"] < max_value:
+            result["cfs_wear_parts_replacement"]["cfs_desiccant"]["cur_value"] += interval
+        return result
+    def check_cfs_enable(self):
+        box_enable = 0
+        try:
+            box = self.printer.lookup_object("box", None)
+            if box and os.path.exists(box.box_state.tn_save_data_path):
+                with open(box.box_state.tn_save_data_path, "r") as f:
+                    data = json.load(f)
+                    box_enable = data.get("enable", 0)
+        except Exception as err:
+            pass
+        return box_enable
+    def get_maintenance_item(self, web_request):
+        response = {}
+        maintenance_item_param = self.printer.lookup_object("gcode_macro MAINTENANCE_ITEM_PARAM", None)
+        if maintenance_item_param and os.path.exists(self.maintenance_item_path):
+            try:
+                with open(self.maintenance_item_path, 'r') as f:
+                    result = json.loads(f.read())
+                    result = self.maintenance_item_add_threshold(result)
+                    result = self.maintenance_item_add_timeout(result)
+                    response = result
+            except Exception as err:
+                logging.exception(err)
+        web_request.send(response)
+        return response
+    def maintenance_item_add_threshold(self, result):
+        maintenance_item_param = self.printer.lookup_object("gcode_macro MAINTENANCE_ITEM_PARAM", None).variables
+        result["calibrate"]["cut_calibration"]["threshold"] = maintenance_item_param.get("cut_calibration")
+        result["calibrate"]["shaper_calibrate"]["threshold"] = maintenance_item_param.get("shaper_calibrate")
+        result["calibrate"]["belt_tensioning"]["threshold"] = maintenance_item_param.get("belt_tensioning")
+        result["routine_maintenance"]["motion_mechanism_lubrication"]["threshold"] = maintenance_item_param.get("motion_mechanism_lubrication")
+        result["routine_maintenance"]["camera_maintenance"]["threshold"] = maintenance_item_param.get("camera_maintenance")
+        result["routine_maintenance"]["fan_inspection"]["threshold"] = maintenance_item_param.get("fan_inspection")
+        result["machine_wear_parts_replacement"]["nozzle"]["threshold"] = maintenance_item_param.get("nozzle")
+        result["machine_wear_parts_replacement"]["cut"]["threshold"] = maintenance_item_param.get("cut")
+        result["machine_wear_parts_replacement"]["machine_teflon_tube"]["threshold"] = maintenance_item_param.get("machine_teflon_tube")
+        result["machine_wear_parts_replacement"]["wipe_mouth_strip"]["threshold"] = maintenance_item_param.get("wipe_mouth_strip")
+        result["machine_wear_parts_replacement"]["air_filter"]["threshold"] = maintenance_item_param.get("air_filter")
+        result["cfs_wear_parts_replacement"]["cfs_teflon_tube"]["threshold"] = maintenance_item_param.get("cfs_teflon_tube")
+        result["cfs_wear_parts_replacement"]["cfs_desiccant"]["threshold"] = maintenance_item_param.get("cfs_desiccant")
+        result["calibrate"]["cut_calibration"]["timeout"] = False
+        result["calibrate"]["shaper_calibrate"]["timeout"] = False
+        result["calibrate"]["belt_tensioning"]["timeout"] = False
+        result["routine_maintenance"]["motion_mechanism_lubrication"]["timeout"] = False
+        result["routine_maintenance"]["camera_maintenance"]["timeout"] = False
+        result["routine_maintenance"]["fan_inspection"]["timeout"] = False
+        result["machine_wear_parts_replacement"]["nozzle"]["timeout"] = False
+        result["machine_wear_parts_replacement"]["cut"]["timeout"] = False
+        result["machine_wear_parts_replacement"]["machine_teflon_tube"]["timeout"] = False
+        result["machine_wear_parts_replacement"]["wipe_mouth_strip"]["timeout"] = False
+        result["machine_wear_parts_replacement"]["air_filter"]["timeout"] = False
+        result["cfs_wear_parts_replacement"]["cfs_teflon_tube"]["timeout"] = False
+        result["cfs_wear_parts_replacement"]["cfs_desiccant"]["timeout"] = False
+        return result
+    def maintenance_item_add_timeout(self, result):
+        maintenance_item_param = self.printer.lookup_object("gcode_macro MAINTENANCE_ITEM_PARAM", None).variables
+        if result["calibrate"]["cut_calibration"]["cur_value"] > maintenance_item_param.get("cut_calibration"):
+            result["calibrate"]["cut_calibration"]["timeout"] = True
+        if result["calibrate"]["shaper_calibrate"]["cur_value"] > maintenance_item_param.get("shaper_calibrate"):
+            result["calibrate"]["shaper_calibrate"]["timeout"] = True
+        if result["calibrate"]["belt_tensioning"]["cur_value"] > maintenance_item_param.get("belt_tensioning"):
+            result["calibrate"]["belt_tensioning"]["timeout"] = True
+        if result["routine_maintenance"]["motion_mechanism_lubrication"]["cur_value"] > maintenance_item_param.get("motion_mechanism_lubrication"):
+            result["routine_maintenance"]["motion_mechanism_lubrication"]["timeout"] = True
+        if result["routine_maintenance"]["camera_maintenance"]["cur_value"] > maintenance_item_param.get("camera_maintenance"):
+            result["routine_maintenance"]["camera_maintenance"]["timeout"] = True
+        if result["routine_maintenance"]["fan_inspection"]["cur_value"] > maintenance_item_param.get("fan_inspection"):
+            result["routine_maintenance"]["fan_inspection"]["timeout"] = True
+        if result["machine_wear_parts_replacement"]["nozzle"]["cur_value"] > maintenance_item_param.get("nozzle"):
+            result["machine_wear_parts_replacement"]["nozzle"]["timeout"] = True
+        if result["machine_wear_parts_replacement"]["cut"]["cur_value"] > maintenance_item_param.get("cut"):
+            result["machine_wear_parts_replacement"]["cut"]["timeout"] = True
+        if result["machine_wear_parts_replacement"]["machine_teflon_tube"]["cur_value"] > maintenance_item_param.get("machine_teflon_tube"):
+            result["machine_wear_parts_replacement"]["machine_teflon_tube"]["timeout"] = True
+        if result["machine_wear_parts_replacement"]["wipe_mouth_strip"]["cur_value"] > maintenance_item_param.get("wipe_mouth_strip"):
+            result["machine_wear_parts_replacement"]["wipe_mouth_strip"]["timeout"] = True
+        if result["machine_wear_parts_replacement"]["air_filter"]["cur_value"] > maintenance_item_param.get("air_filter"):
+            result["machine_wear_parts_replacement"]["air_filter"]["timeout"] = True
+        if result["cfs_wear_parts_replacement"]["cfs_teflon_tube"]["cur_value"] > maintenance_item_param.get("cfs_teflon_tube"):
+            result["cfs_wear_parts_replacement"]["cfs_teflon_tube"]["timeout"] = True
+        if result["cfs_wear_parts_replacement"]["cfs_desiccant"]["cur_value"] > maintenance_item_param.get("cfs_desiccant"):
+            result["cfs_wear_parts_replacement"]["cfs_desiccant"]["timeout"] = True
+        return result
+    def cmd_SET_MAINTENANCE_ITEM_VARIABLE(self, gcmd):
+        # SET_MAINTENANCE_ITEM_VARIABLE NAME=calibrate VARIABLE=cut_calibration VALUE=0
+        name = gcmd.get("NAME", "")
+        variable = gcmd.get("VARIABLE", "")
+        value = gcmd.get_int("VALUE", 0)
+        if name and variable:
+            self.update_maintenance_item(variable_update=True, update_item_name=name, variable_update_obj=variable, reset_value=value)
     def handle_shutdown(self):
         if self.work_timer is not None:
             self.must_pause_work = True
@@ -168,7 +430,8 @@ class VirtualSD:
             'first_layer_stop':  self.first_layer_stop,
             'layer': self.layer,
             'layer_count': self.layer_count,
-            'run_dis': self.run_dis
+            'run_dis': self.run_dis,
+            'bed_mesh_calibate_state': self.bed_mesh_calibate_state
         }
     def file_path(self):
         if self.current_file:
@@ -193,6 +456,8 @@ class VirtualSD:
         self.work_timer = self.reactor.register_timer(
             self.work_handler, self.reactor.NOW)
     def do_cancel(self):
+        self.printer.send_event("v_sd:update_filament_used")
+        self.reactor.pause(self.reactor.monotonic() + 0.2)
         self.is_cancel = True
         self.print_stats.power_loss = 0
         self.first_layer_stop = False
@@ -209,6 +474,8 @@ class VirtualSD:
             self.print_stats.note_cancel()
         self.is_cancel = False
         self.file_position = self.file_size = 0.
+
+    def cmd_CLEAR_EEPROM_INFO(self, gcmd):
         from subprocess import call
         if os.path.exists(self.print_file_name_path):
             os.remove(self.print_file_name_path)
@@ -226,12 +493,13 @@ class VirtualSD:
                 bl24c16f.setEepromDisable()
                 # self.gcode.run_script("EEPROM_WRITE_BYTE ADDR=1 VAL=255")
         except Exception as err:
-            pass
+            logging.error(err)
         self.update_print_history_info(only_update_status=True, state="cancelled")
         if self.print_id and self.cur_print_data:
             reportInformation("key701", data=self.cur_print_data)
             self.print_id = ""
             self.cur_print_data = {}
+
     # G-Code commands
     def cmd_error(self, gcmd):
         raise gcmd.error("SD write not supported")
@@ -260,6 +528,7 @@ class VirtualSD:
         if self.config.has_section("prtouch_v3") and self.bed_mesh_calibate_state == False and gcmd.get("ISCONTINUEPRINT", False) == False and self.forced_leveling:
             self.run_bed_mesh_calibate = True
         self.end_print_state = False
+        self.layer_key = ""
         self.print_id = ""
         if self.work_timer is not None:
             raise gcmd.error("SD busy")
@@ -871,11 +1140,18 @@ class VirtualSD:
         if not power_loss_switch:
             return
         if line.startswith(";"):
+            if self.layer_key and line.startswith(self.layer_key):
+                self.layer += 1
+                self.record_layer(self.layer)
+                self.reactor.pause(self.reactor.monotonic() + 0.001)
+                return
             for layer_key in LAYER_KEYS:
                 if line.startswith(layer_key):
                     self.layer += 1
                     self.record_layer(self.layer)
                     self.reactor.pause(self.reactor.monotonic() + 0.001)
+                    if not self.layer_key:
+                        self.layer_key = layer_key
                     break
 
     def first_floor_pause(self, line, toolhead):
@@ -891,6 +1167,7 @@ class VirtualSD:
         if not power_loss_switch:
             return
         if line.startswith("END_PRINT") and delay_photography_switch and os.path.exists("/tmp/camera_main"):
+            self.printer.send_event("v_sd:update_filament_used")
             self.gcode.run_script("END_PRINT_POINT_WITHOUT_LIFTING")
             self.gcode.run_script("M400")
             capture(end_print=True, frame=frame)
@@ -932,7 +1209,7 @@ class VirtualSD:
         # 判断是否运行热床调平
         if self.run_bed_mesh_calibate:
             self.run_bed_mesh_calibate = False
-            cmd = "BED_MESH_CALIBRATE_START_PRINT"
+            cmd = "BED_MESH_CALIBRATE_START_PRINT GCODE_FILE='%s'" % self.current_file.name
             try:
                 # 当前目标温度大于热床调平时的默认温度时,用当前目标温度调平
                 custom_macro = self.printer.lookup_object('custom_macro')
@@ -946,6 +1223,8 @@ class VirtualSD:
             self.gcode.run_script(cmd)
         # self.gcode.run_script("G90")
         toolhead = self.printer.lookup_object('toolhead')
+        pause_resume = self.printer.lookup_object('pause_resume')
+        toolhead.extrude_below_min_temp_err_is_report = False
         start_time = interval_start_time = self.reactor.monotonic()
         self.last_layer = self.layer
         while not self.must_pause_work:
@@ -956,8 +1235,9 @@ class VirtualSD:
                 except UnicodeDecodeError as err:
                     logging.exception(err)
                     err_msg = '{"code": "key571", "msg": "File UnicodeDecodeError"}'
-                    self.gcode.respond_info(err_msg)
-                    raise self.printer.command_error(err_msg)
+                    self.gcode._respond_error(err_msg)
+                    self.gcode.run_script("CANCEL_PRINT")
+                    break
                 except:
                     logging.exception("virtual_sdcard read")
                     break
@@ -1022,7 +1302,12 @@ class VirtualSD:
                     self.resume_print_speed()
                 # 在读到END_PRINT的时候 判断是否需要拍照
                 self.check_end_print(line, power_loss_switch, delay_photography_switch, frame)
-                self.gcode.run_script(line)
+                if self.is_move_out_of_range_in_printing and pause_resume.pause_start == False:
+                    self.is_move_out_of_range_in_printing = False
+                    self.gcode.run_script_from_command("PAUSE")
+                    self.is_move_out_of_range_in_printing = False
+                else:
+                    self.gcode.run_script(line)
                 if power_loss_switch:
                     self.count_line += 1
                 if self.count_G1 < 20 and line.startswith("G1"):
@@ -1062,6 +1347,7 @@ class VirtualSD:
         self.eepromWriteCount = 1
         self.work_timer = None
         self.cmd_from_sd = False
+        toolhead.extrude_below_min_temp_err_is_report = False
         if error_message is not None:
             self.print_stats.note_error(error_message)
         elif self.current_file is not None:

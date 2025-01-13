@@ -35,6 +35,8 @@ class SerialReader:
         self.pending_notifications = {}
         self.z_align_status = {}
         self.finetuning_status = {}
+        self.adc_out_of_range_info = {"mcu0": False, "mcu0_isReport": False, "noz0": False, "noz0_isReport": False,
+                                      "bed0": False, "bed0_isReport": False}
     def _bg_thread(self):
         response = self.ffi_main.new('struct pull_queue_message *')
         try:
@@ -316,7 +318,11 @@ class SerialReader:
                 self.z_align_status = params
             elif params.get("#name", "") == "finetuning_status":
                 self.finetuning_status = params
-
+            elif params.get("static_string_id", "").endswith("ADC out of range"):
+                if params.get("static_string_id", "")==("mcu0 ADC out of range"):
+                    self.adc_out_of_range_info["mcu0"] = True
+                elif params.get("static_string_id", "")==("noz0 ADC out of range"):
+                    self.adc_out_of_range_info["noz0"] = True
 # Class to send a query command and return the received response
 class SerialRetryCommand:
     def __init__(self, serial, name, oid=None):

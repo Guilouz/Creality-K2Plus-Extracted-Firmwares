@@ -24,6 +24,7 @@
 /etc/sysConfig/UIResource/K1/belt_uninstall_right_tool.png
 /etc/sysConfig/UIResource/K1/switch_axis_test_step_dir.png
 /etc/init.d/app
+/etc/sysConfig/UIResource/K1/gcode_weight_dir_flag.png
 /etc/sysConfig/UIResource/K1/img_boot0.png
 /etc/sysConfig/audio/chinese/1.sound_button_smart.wav
 /etc/sysConfig/UIResource/K1/img_box_guide.png
@@ -60,6 +61,7 @@
 /etc/sysConfig/defData/file_print_photo.png
 /etc/sysConfig/defData/line_width_height.gcode
 /etc/sysConfig/UIResource/K1/zoffset_Add_Disable.png
+/etc/sysConfig/UIResource/K1/gcode_weight_flag.png
 /etc/sysConfig/UIResource/K1/layers.png
 /etc/sysConfig/defData/material_database.json
 /etc/sysConfig/audio/chinese/1.sound_button_crisp.wav
@@ -110,6 +112,7 @@
 /etc/sysConfig/UIResource/K1/img_multi_color_guide_3.png
 /usr/bin/display-server
 /etc/sysConfig/UIResource/K1/filamentTip.png
+/etc/sysConfig/UIResource/K1/fan_schematic.png
 /etc/sysConfig/UIResource/K1/img_humidity_little_height_rangle.png
 /etc/sysConfig/UIResource/K1/SwitchAxisStep2.png
 /etc/sysConfig/UIResource/K1/img_in_progress.gif

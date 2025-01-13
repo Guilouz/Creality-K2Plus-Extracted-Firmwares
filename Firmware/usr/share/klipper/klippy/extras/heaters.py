@@ -176,13 +176,14 @@ class Heater:
     cmd_SET_HEATER_TEMPERATURE_help = "Sets a heater temperature"
     def cmd_SET_HEATER_TEMPERATURE(self, gcmd):
         temp = gcmd.get_float('TARGET', 0.)
+        wait = True if gcmd.get_int('WAIT', 0)==1 else False
         if self.name == "chamber_heater":
             self.target_temp = temp
             # 重置停止加热标识
             if self.target_temp > 40:
                 self.stop_heating = False 
         pheaters = self.printer.lookup_object('heaters')
-        pheaters.set_temperature(self, temp)
+        pheaters.set_temperature(self, temp, wait=wait)
 
 
 ######################################################################

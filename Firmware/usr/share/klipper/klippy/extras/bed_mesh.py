@@ -821,7 +821,7 @@ class BedMeshCalibrate:
 
 class ZMesh:
     def __init__(self, params,printer):
-        self._info_array = [0.0]*(12+625)
+        self._info_array = [0.0]*(12+1)
         self.info_array = np.array(self._info_array, dtype=np.float64)
         self.info_array_addr_int = self.info_array.ctypes.data
 
@@ -833,7 +833,7 @@ class ZMesh:
             self.info_array[4]=0
         else:
             self.info_array[4]=1
-            self.info_array[12:] = self.mesh_matrix
+            self.__mesh_matrix[0:] = self.mesh_matrix
         self.mesh_params = params
         self.uuid = self.info_array[0]=printer.get_reactor().monotonic()
         self.avg_z = 0.
@@ -863,6 +863,10 @@ class ZMesh:
         py_cnt = params['y_count']
         self.mesh_x_count = (px_cnt - 1) * mesh_x_pps + px_cnt
         self.mesh_y_count = (py_cnt - 1) * mesh_y_pps + py_cnt
+
+        self.__mesh_matrix = np.full(self.mesh_y_count * self.mesh_x_count, 0., dtype=np.float64)
+        self.__mesh_matrix_addr = self.__mesh_matrix.ctypes.data
+        self.info_array[12]=self.__mesh_matrix_addr
         self.x_mult = mesh_x_pps + 1
         self.y_mult = mesh_y_pps + 1
         logging.debug("bed_mesh: Mesh grid size - X:%d, Y:%d"
@@ -1014,7 +1018,7 @@ class ZMesh:
             self.info_array[4]=0
         else:
             self.info_array[4]=1
-            self.info_array[12:] = self.mesh_matrix
+            self.__mesh_matrix[0:]=self.mesh_matrix
     def _sample_lagrange(self, z_matrix):
         x_mult = self.x_mult
         y_mult = self.y_mult
@@ -1045,7 +1049,7 @@ class ZMesh:
             self.info_array[4]=0
         else:
             self.info_array[4]=1
-            self.info_array[12:] = [item for row in self.mesh_matrix for item in row]
+            self.__mesh_matrix[0:] = [item for row in self.mesh_matrix for item in row]
     def _get_lagrange_coords(self):
         xpts = []
         ypts = []
@@ -1103,7 +1107,7 @@ class ZMesh:
             self.info_array[4]=0
         else:
             self.info_array[4]=1
-            self.info_array[12:] = [item for row in self.mesh_matrix for item in row]
+            self.__mesh_matrix[0:] = [item for row in self.mesh_matrix for item in row]
     def _get_x_ctl_pts(self, x, y):
         # Fetch control points and t for a X value in the mesh
         x_mult = self.x_mult

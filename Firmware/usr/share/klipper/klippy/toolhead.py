@@ -427,7 +427,8 @@ class ToolHead:
         return m
     def simple_move(self, newpos):
         # print("get #################################################move: %s %s" % (newpos, speed))
-        self.record_z_pos(newpos[2])
+        if newpos[2] < self.kin.limits[2][1]:
+            self.record_z_pos(newpos[2])
         # starttime=time.time()
         
         
@@ -443,12 +444,33 @@ class ToolHead:
         elif self.double_array[13]==1:
             self.commanded_pos[3] = newpos[3]
         elif self.double_array[13]==-4:
-            raise self.printer.command_error("""{"code":"key111", "msg": "Extrude below minimum temp\nSee the 'min_extrude_temp' config option for details", "values": []}""")
+            print_stats = self.printer.lookup_object('print_stats')
+            gcode = self.printer.lookup_object('gcode')
+            m = """{"code":"key111", "msg": "Extrude below minimum temp, See the 'min_extrude_temp' config option for details", "values": []}"""
+            if print_stats.state == "printing" and self.extrude_below_min_temp_err_is_report==False:
+                gcode._respond_error(m)
+                self.extrude_below_min_temp_err_is_report = True
+                gcode.respond_info("state:%s pause_start:%s" % (self.printer.lookup_object('print_stats').state, self.printer.lookup_object('pause_resume').pause_start))
+                if self.printer.lookup_object('print_stats').state == "printing" and self.printer.lookup_object('pause_resume').pause_start == False:
+                    self.printer.lookup_object('gcode').run_script_from_command("PAUSE")
+            elif print_stats.state == "standby":
+            # elif print_stats.state != "printing":
+                gcode._respond_error(m)
+            return
+            # raise self.printer.command_error("""{"code":"key111", "msg": "Extrude below minimum temp\nSee the 'min_extrude_temp' config option for details", "values": []}""")
         elif self.double_array[13]==-2:
             raise self.printer.command_error("Must home axis first")
         elif self.double_array[13]==-3:
             m = self.check_move_out_of_range(newpos)
-            raise self.printer.command_error(m)
+            # self.printer.lookup_object('gcode')._respond_error(m)
+            print_stats = self.printer.lookup_object('print_stats')
+            if print_stats.state == "printing" and self.printer.lookup_object('pause_resume').pause_start == False and self.printer.lookup_object('virtual_sdcard').is_move_out_of_range_in_printing==False:
+                self.printer.lookup_object('virtual_sdcard').is_move_out_of_range_in_printing=True
+                self.printer.lookup_object('gcode')._respond_error(m)
+            elif print_stats.state != "printing" and print_stats.state != "paused":
+                self.printer.lookup_object('gcode')._respond_error(m)
+            return
+            # raise self.printer.command_error(m)
             # raise self.printer.command_error("Move out of range")
         elif self.double_array[13]==-1:
             return
@@ -470,7 +492,8 @@ class ToolHead:
             # print(f"after _check_stall: {self.print_time} {self.need_check_stall} {self.special_queuing_state}")
     def move(self, newpos, speed):
         # print("get #################################################move: %s %s" % (newpos, speed))
-        self.record_z_pos(newpos[2])
+        if newpos[2] < self.kin.limits[2][1]:
+            self.record_z_pos(newpos[2])
         # starttime=time.time()
         # print(f"move:{self.commanded_pos} {newpos} {speed}")
         self.double_array[4]=self.commanded_pos[0]
@@ -493,12 +516,33 @@ class ToolHead:
         elif self.double_array[13]==1:
             self.commanded_pos[3] = newpos[3]
         elif self.double_array[13]==-4:
-            raise self.printer.command_error("""{"code":"key111", "msg": "Extrude below minimum temp\nSee the 'min_extrude_temp' config option for details", "values": []}""")
+            print_stats = self.printer.lookup_object('print_stats')
+            gcode = self.printer.lookup_object('gcode')
+            m = """{"code":"key111", "msg": "Extrude below minimum temp, See the 'min_extrude_temp' config option for details", "values": []}"""
+            if print_stats.state == "printing" and self.extrude_below_min_temp_err_is_report==False:
+                gcode._respond_error(m)
+                self.extrude_below_min_temp_err_is_report = True
+                gcode.respond_info("state:%s pause_start:%s" % (self.printer.lookup_object('print_stats').state, self.printer.lookup_object('pause_resume').pause_start))
+                if self.printer.lookup_object('print_stats').state == "printing" and self.printer.lookup_object('pause_resume').pause_start == False:
+                    self.printer.lookup_object('gcode').run_script_from_command("PAUSE")
+            elif print_stats.state == "standby":
+            # elif print_stats.state != "printing":
+                gcode._respond_error(m)
+            return
+            # raise self.printer.command_error("""{"code":"key111", "msg": "Extrude below minimum temp\nSee the 'min_extrude_temp' config option for details", "values": []}""")
         elif self.double_array[13]==-2:
             raise self.printer.command_error("Must home axis first")
         elif self.double_array[13]==-3:
             m = self.check_move_out_of_range(newpos)
-            raise self.printer.command_error(m)
+            # self.printer.lookup_object('gcode')._respond_error(m)
+            print_stats = self.printer.lookup_object('print_stats')
+            if print_stats.state == "printing" and self.printer.lookup_object('pause_resume').pause_start == False and self.printer.lookup_object('virtual_sdcard').is_move_out_of_range_in_printing==False:
+                self.printer.lookup_object('virtual_sdcard').is_move_out_of_range_in_printing=True
+                self.printer.lookup_object('gcode')._respond_error(m)
+            elif print_stats.state != "printing" and print_stats.state != "paused":
+                self.printer.lookup_object('gcode')._respond_error(m)
+            return
+            # raise self.printer.command_error(m)
             # raise self.printer.command_error("Move out of range")
         elif self.double_array[13]==-1:
             return

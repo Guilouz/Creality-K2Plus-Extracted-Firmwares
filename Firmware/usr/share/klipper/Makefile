@@ -99,6 +99,7 @@ board_hw_version := $(board_type)$(CONFIG_MCU_BOARD_ID)_$(CONFIG_MCU_BOARD_HW_VE
 board_fw_version := $(board_type)$(CONFIG_MCU_BOARD_ID)_$(CONFIG_MCU_BOARD_FW_VER)_$(CONFIG_MCU_BOARD_FW_RESERVED)
 
 CFLAGS += -DBOARD_FW_VERSION=\"$(board_fw_version)\"
+CFLAGS += -DBOARD_MCU_TYPE=\"$(board_type)$(CONFIG_MCU_BOARD_ID)\"
 BOOTLOADER_CFLAGS += -DBOARD_HW_VERSION=\"$(board_hw_version)\"
 
 export board_hw_version board_fw_version

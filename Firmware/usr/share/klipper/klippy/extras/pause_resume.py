@@ -43,6 +43,7 @@ class PauseResume:
                                    self._getBootLoaderVersion)
         self._setBootLoaderStateCmdOid = None
         self.pause_start = False
+        self.motor_cancel_print_start = False
         self.resume_err = False
     def handle_connect(self):
         self.v_sd = self.printer.lookup_object('virtual_sdcard', None)
@@ -107,6 +108,9 @@ class PauseResume:
         return response
     
     def _handle_cancel_continue_print_request(self, web_request):
+        self.printer.send_event("v_sd:cancel_power_loss_update_filament_used")
+        reactor = self.printer.get_reactor()
+        reactor.pause(reactor.monotonic()+0.2)
         from subprocess import call
         if os.path.exists(self.v_sd.print_file_name_path):
             os.remove(self.v_sd.print_file_name_path)

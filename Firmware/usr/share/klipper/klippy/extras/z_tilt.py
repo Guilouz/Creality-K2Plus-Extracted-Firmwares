@@ -158,6 +158,7 @@ class ZTilt:
         gcode.register_command('Z_TILT_ADJUST', self.cmd_Z_TILT_ADJUST,
                                desc=self.cmd_Z_TILT_ADJUST_help)
         gcode.register_command('ADJUST_STEPPERS', self.cmd_ADJUST_STEPPERS)
+        gcode.register_command('RM_ADJUSTMENT_FILE', self.cmd_RM_ADJUSTMENT_FILE)
         self.stepper_z_adjustment = 0
         self.stepper_z1_adjustment = 0
         self.stepper_adjustment_path = os.path.join(base_dir, "creality/userdata/config/stepper_adjustment.json")

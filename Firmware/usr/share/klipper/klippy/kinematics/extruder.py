@@ -173,6 +173,9 @@ class PrinterExtruder:
             self.heater = pheaters.lookup_heater(shared_heater)
         # Setup kinematic checks
         self.__nozzle_diameter = config.getfloat('nozzle_diameter', above=0.)
+        user_nozzle_diameter = config.getfloat('user_nozzle_diameter', default=0.)
+        if user_nozzle_diameter >= 0.1:
+            self.__nozzle_diameter = user_nozzle_diameter
         filament_diameter = config.getfloat(
             'filament_diameter', minval=self.__nozzle_diameter)
         self.filament_area = math.pi * (filament_diameter * .5)**2
@@ -210,6 +213,7 @@ class PrinterExtruder:
         gcode = self.printer.lookup_object('gcode')
         if self.name == 'extruder':
             toolhead.set_extruder(self, 0.)
+            gcode.register_command("SET_NOZZLE_DIAMETER", self.cmd_SET_NOZZLE_DIAMETER)
             gcode.register_command("M104", self.cmd_M104)
             gcode.register_command("M109", self.cmd_M109)
         gcode.register_mux_command("ACTIVATE_EXTRUDER", "EXTRUDER",
@@ -222,12 +226,14 @@ class PrinterExtruder:
         self.info_array[4]=self.__nozzle_diameter
         self.info_array[5]=self.__max_e_dist
         self.info_array[6]=self.__instant_corner_v
-        print(f"extruder.py :self.info_array: {self.info_array},self.info_array_addr_int: {self.info_array_addr_int}")
+        self.extrude_below_min_temp_err_is_report = False
     def update_move_time(self, flush_time):
         self.trapq_finalize_moves(self.trapq, flush_time)
     def get_status(self, eventtime):
         sts = self.heater.get_status(eventtime)
         sts['can_extrude'] = self.heater.can_extrude
+        sts['extrude_below_min_temp_err_is_report'] = self.extrude_below_min_temp_err_is_report
+        sts['nozzle_diameter'] = self.__nozzle_diameter
         if self.extruder_stepper is not None:
             sts.update(self.extruder_stepper.get_status(eventtime))
         return sts
@@ -242,9 +248,18 @@ class PrinterExtruder:
     def check_move(self, move):
         axis_r = move.axes_r[3]
         if not self.heater.can_extrude:
-            raise self.printer.command_error(
-                """{"code":"key111", "msg": "Extrude below minimum temp\nSee the 'min_extrude_temp' config option for details", "values": []}"""
-            )
+            gcode = self.printer.lookup_object('gcode')
+            print_stats = self.printer.lookup_object('print_stats')
+            m = """{"code":"key111", "msg": "Extrude below minimum temp, See the 'min_extrude_temp' config option for details", "values": []}"""
+            if print_stats.state == "printing" and self.extrude_below_min_temp_err_is_report==False:
+                gcode._respond_error(m)
+                self.extrude_below_min_temp_err_is_report = True
+                gcode.respond_info("state:%s pause_start:%s" % (self.printer.lookup_object('print_stats').state, self.printer.lookup_object('pause_resume').pause_start))
+                if self.printer.lookup_object('print_stats').state == "printing" and self.printer.lookup_object('pause_resume').pause_start == False:
+                    self.printer.lookup_object('gcode').run_script_from_command("PAUSE")
+            elif print_stats.state == "standby":
+                gcode._respond_error(m)
+            return
         if (not move.axes_d[0] and not move.axes_d[1]) or axis_r < 0.:
             # Extrude only move (or retraction move) - limit accel and velocity
             if abs(move.axes_d[3]) > self.__max_e_dist:
@@ -310,6 +325,13 @@ class PrinterExtruder:
     def cmd_M109(self, gcmd):
         # Set Extruder Temperature and Wait
         self.cmd_M104(gcmd, wait=True)
+    def cmd_SET_NOZZLE_DIAMETER(self, gcmd):
+        value = gcmd.get_float('VALUE', 0.4)
+        self.__nozzle_diameter = value
+        configfile = self.printer.lookup_object('configfile')
+        configfile.set('extruder', 'user_nozzle_diameter', '%.3f' % (self.__nozzle_diameter))
+        gcode = self.printer.lookup_object('gcode')
+        gcode.run_script_from_command('CXSAVE_CONFIG')
     cmd_ACTIVATE_EXTRUDER_help = "Change the active extruder"
     def cmd_ACTIVATE_EXTRUDER(self, gcmd):
         toolhead = self.printer.lookup_object('toolhead')

@@ -334,6 +334,7 @@ class ResonanceTester:
         gcmd.respond_info(
             "The SAVE_CONFIG command will update the printer config file\n"
             "with these parameters and restart the printer.")
+        self.printer.send_event("v_sd:reset_shaper_calibrate_count")
     cmd_MEASURE_AXES_NOISE_help = (
         "Measures noise of all enabled accelerometer chips")
     def cmd_MEASURE_AXES_NOISE(self, gcmd):

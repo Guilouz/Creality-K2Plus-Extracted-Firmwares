@@ -216,8 +216,7 @@ class Zalign:
                 break
             self.cur_retries += 1
         if toolhead.G29_flag == False:
-            # 补偿0.2, 测试验证首层虚层的问题
-            offset_value = self.printer.lookup_object('virtual_sdcard').offset_value
+            offset_value = 0
             now_pos = toolhead.get_position()
             real_zmax = self.read_real_zmax()
             za = real_zmax + offset_value

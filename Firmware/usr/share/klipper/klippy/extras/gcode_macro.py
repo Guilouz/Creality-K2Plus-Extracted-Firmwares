@@ -220,6 +220,7 @@ class GCodeMacro:
             self.in_script = False
             if self.alias == "PAUSE":
                 self.printer.lookup_object('pause_resume').pause_start = False
-
+            elif self.alias == "MOTOR_CANCEL_PRINT":
+                self.printer.lookup_object('pause_resume').motor_cancel_print_start = False
 def load_config_prefix(config):
     return GCodeMacro(config)

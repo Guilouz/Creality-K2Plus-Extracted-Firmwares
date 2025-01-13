@@ -190,6 +190,16 @@ class GCodeMove:
                         # value relative to base coordinate position
                         self.last_position[1] = float(part[1:]) + self.base_position[1]
                 elif part[0]=="Z" or part[0]=="z":
+                    toolhead = self.printer.lookup_object('toolhead')
+                    print_stats = self.printer.lookup_object('print_stats')
+                    max_z = toolhead.kin.limits[2][1]+5
+                    curtime = self.printer.get_reactor().monotonic()
+                    if 'z' in toolhead.get_status(curtime)['homed_axes'] and float(part[1:]) > max_z or (not self.absolute_coord and self.last_position[2]+float(part[1:])>max_z):
+                        m = """{"code":"587","msg":"Move out of range %s", "values":[]}""" % str(part)
+                        self.printer.lookup_object('gcode')._respond_error(m)
+                        if print_stats.state == "printing" and self.printer.lookup_object('pause_resume').pause_start == False and self.printer.lookup_object('virtual_sdcard').is_move_out_of_range_in_printing==False:
+                            self.printer.lookup_object('virtual_sdcard').is_move_out_of_range_in_printing=True
+                        return
                     if not self.absolute_coord:
                             # value relative to position of last move
                         self.last_position[2] += float(part[1:])
@@ -490,7 +500,30 @@ class GCodeMove:
                 gcode.run_script_from_command('BED_MESH_PROFILE LOAD="default"')
                 now_pos = toolhead.get_position()
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE after cmd_ZDOWN now_pos:%s"%str(now_pos))
-                toolhead.set_position([now_pos[0], now_pos[1], now_pos[2], self.last_position[3]], homing_axes=(2,))
+                adjustments_diff = 0
+                if self.config.has_section("z_tilt"):
+                    try:
+                        z_tilt = self.printer.lookup_object('z_tilt')
+                        adjustments = z_tilt.get_adjustments()
+                        logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE z_tilt.get_adjustments:%s" % str(adjustments))
+                        if adjustments:
+                            negative = False
+                            if abs(adjustments[0]) < abs(adjustments[1]):
+                                if adjustments[1] < 0:
+                                    negative = True
+                            else:
+                                if adjustments[0] < 0:
+                                    negative = True
+                            adjustments_diff = abs(adjustments[0]-adjustments[1])/2
+                            adjustments_diff = adjustments_diff*(-1.0) if negative else adjustments_diff
+                    except Exception as err:
+                        logging.exception("RESTORE z_tilt.get_adjustments err:%s" % err)
+                if adjustments_diff != 0 and abs(adjustments_diff)>4.0:
+                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE adjustments_diff:%s > 3.0" % adjustments_diff)
+                    adjustments_diff =  adjustments_diff/10
+                cur_z = now_pos[2]+adjustments_diff
+                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE cur_z:%s adjustments_diff:%s" % (cur_z, adjustments_diff))
+                toolhead.set_position([now_pos[0], now_pos[1], cur_z, self.last_position[3]], homing_axes=(2,))
             else:
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE BED_MESH_PROFILE LOAD='default'")
                 gcode.run_script_from_command('BED_MESH_PROFILE LOAD="default"')

@@ -12,21 +12,27 @@ class FanFeedback:
 
         self.params = []
         # 主mcu上的风扇
-        fan0_pin_sensor_pin = config.get("fan0_pin")
-        self.mcu_fan_count = 1
-        fan0_pin_params = ppins.lookup_pin(fan0_pin_sensor_pin, can_invert=False, can_pullup=True)
+        fan0_pin_sensor_pin = config.getlist("fan0_pin", None)
+        self.mcu_fan_count = len(fan0_pin_sensor_pin)
+        pins_count = 0
+        # 获取第一个引脚
+        pin_sensor_pin = fan0_pin_sensor_pin[pins_count]
+        fan0_pin_params = ppins.lookup_pin(pin_sensor_pin, can_invert=False, can_pullup=True)
         mcu = fan0_pin_params['chip']
         mcu_oid = mcu.create_oid()
-        mcu_config_cmd = "config_fancheck oid=%d fan_num=%d fan0_pin=%s pull_up0=%s" \
-                        " fan1_pin=%s pull_up1=%s fan2_pin=%s pull_up2=%s fan3_pin=%s" \
-                        " pull_up3=%s fan4_pin=%s pull_up4=%s" % (
-            mcu_oid, self.mcu_fan_count,
-            fan0_pin_params['pin'], fan0_pin_params["pullup"],
-            fan0_pin_params['pin'], fan0_pin_params["pullup"],
-            fan0_pin_params['pin'], fan0_pin_params["pullup"],
-            fan0_pin_params['pin'], fan0_pin_params["pullup"],
-            fan0_pin_params['pin'], fan0_pin_params["pullup"]
-        )
+        mcu_config_cmd = "config_fancheck oid=%d fan_num=%d " % (mcu_oid, self.mcu_fan_count)
+        mcu_config_cmd += " fan%d_pin=%s pull_up%d=%s" % (pins_count, fan0_pin_params["pin"], pins_count, fan0_pin_params["pullup"])
+        # 获取第二个之后的引脚
+        for i in range(self.mcu_fan_count - 1):
+            pins_count += 1
+            pin_sensor_pin = fan0_pin_sensor_pin[pins_count]
+            fan0_pin_params = ppins.lookup_pin(pin_sensor_pin, can_invert=False, can_pullup=True)
+            mcu_config_cmd += " fan%d_pin=%s pull_up%d=%s" % (pins_count, fan0_pin_params["pin"], pins_count, fan0_pin_params["pullup"])
+        # 补全协议
+        for i in range(5 - self.mcu_fan_count):
+            pins_count += 1
+            mcu_config_cmd += " fan%d_pin=%s pull_up%d=%s" % (pins_count, fan0_pin_params["pin"], pins_count, fan0_pin_params["pullup"])
+        
         mcu.add_config_cmd(mcu_config_cmd)
         mcu.register_response(self._handle_result_fan_check0, "fan_status", mcu_oid)
         param = 0, mcu_config_cmd, fan0_pin_params, mcu, mcu_oid
@@ -57,8 +63,11 @@ class FanFeedback:
         self.params.append(param)
         self.gcode = config.get_printer().lookup_object('gcode')
         self.gcode.register_command("QUERY_FAN_CHECK", self.cmd_QUERY_FAN_CHECK, desc=self.cmd_QUERY_FAN_CHECK_help)
+        self.gcode.register_command("QUERY_PTC_FAN_CHECK", self.cmd_QUERY_PTC_FAN_CHECK, desc=self.cmd_QUERY_PTC_FAN_CHECK_help)
         self.print_stats = self.printer.load_object(config, 'print_stats')
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
+
+        self.ptc_fan_speed = {}
         self.cx_fan_status = {}
         webhooks = self.printer.lookup_object('webhooks')
         webhooks.register_endpoint("get_cx_fan_status",
@@ -106,11 +115,26 @@ class FanFeedback:
     def cmd_QUERY_FAN_CHECK(self, gcmd):
         self.gcode.respond_info("%s" % self.cx_fan_status)
 
+    cmd_QUERY_PTC_FAN_CHECK_help = "Check CXSW Special PTC Fan Status"
+    def cmd_QUERY_PTC_FAN_CHECK(self, gcmd):
+        self.gcode.respond_info("multi ptc %s" % self.ptc_fan_speed)
+
     def _handle_result_fan_check0(self, params):
         # logging.info("_handle_result_fan_check0: %s" % params)
         # self.cx_fan_status["fan0_speed"] = params.get("fan0_speed", 0)
+        fan0_speed = params.get("fan0_speed", 0)
+        if self.mcu_fan_count > 1:
+            ptc_fan_abnormal = False
+            for i in range(self.mcu_fan_count):
+                fan_key = "fan%d_speed" % i
+                self.ptc_fan_speed[fan_key] = fan_x_speed = params.get(fan_key, 0)
+                if fan_x_speed == 0:
+                    ptc_fan_abnormal = True
+            # 转速异常
+            if ptc_fan_abnormal:
+                fan0_speed = 0
         self.cx_fan_status = {
-            "fan0_speed": params.get("fan0_speed", 0),
+            "fan0_speed": fan0_speed,
             "fan1_speed": self.cx_fan_status.get("fan1_speed", 0),
             "fan2_speed": self.cx_fan_status.get("fan2_speed", 0),
             "fan3_speed": self.cx_fan_status.get("fan3_speed", 0),
