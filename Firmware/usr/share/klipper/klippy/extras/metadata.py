@@ -982,6 +982,8 @@ class Creality(BaseSlicer):
         filament_type = _regex_find_string(r";Material Type:(\S+)", self.header_data)
         if not filament_type:
             filament_type = _regex_find_string(r"; default_filament_type = (\S+)", self.footer_data)
+        if not filament_type:
+            filament_type = _regex_find_string(r"; filament_type = (\S+)", self.footer_data)
         if filament_type:
             result = filament_type.strip(";")
         return result

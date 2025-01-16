@@ -189,49 +189,71 @@ class BELT_MDL:
         # self.gcode.respond_info("ACK_mdl_pos: %s"%str(mdl_pos_buf))
         pass
 
-    def set_tension(self):
-        self.init_adc_to_num()
-        self.get_adc()
-        self.adc_to_num(self.mdl.current_place_adc)
+
+    def run_tension(self):    
         movetimes = 0
         while(1):
             movetimes += 1 
             self.gcode.respond_info("times:%s"%movetimes)
-            if(movetimes > 180):                                      #调节次数超过180次，说明丝杆严重非线性导致调节失败，抛出异常
-                if self.name == 'mdlx':
-                    raise self.printer.command_error("""{"code":"key718", "msg":"Belt tensioning timeout: '%s'", "values": []}"""% (self.name))
-                if self.name == 'mdly':
-                    raise self.printer.command_error("""{"code":"key719", "msg":"Belt tensioning timeout: '%s'", "values": []}"""% (self.name))
+            if(movetimes > 200):                                      #调节次数超过200次，说明丝杆严重非线性导致调节失败，抛出异常
+                return 0
             aimpull = self.target_tension - self.mdl.current_tension   #获得拉力期望差距值
             aimpull = abs(aimpull)                                     #取绝对值
             aimpull = 10 if aimpull > 10 else aimpull                  #限幅
             aimmove = int(aimpull) + 2                                 #非线性算法，使得差距大时运动行程大，差距小时运动行程小
             if(aimmove > movetimes):                                   #位移行程随调节次数衰减，避免丝杆非线性导致的震荡，强行收敛
                 aimmove = aimmove - movetimes                          #根据调节次数强行衰减位移量，提高精度
-            elif(movetimes > 90):                                      #前80次不能调整成功，说明出现丝杆严重非线性导致的震荡
+            elif(movetimes > 110):                                      #前80次不能调整成功，说明出现丝杆严重非线性导致的震荡
                 aimmove = 1                                            #以最小步数进行微调，以抵抗非线性带来的震荡，提高精度
-            elif(movetimes > 50):                                      #前50次不能调整成功，说明出现丝杆非线性导致的震荡  
+            elif(movetimes > 70):                                      #前50次不能调整成功，说明出现丝杆非线性导致的震荡  
                 aimmove = 2                                            #此处的aimmove是调节步长，步长越小，调节越精确，但调节次数越多时间越长
-            elif(movetimes > 30):                                      #前30次不能调整成功，说明出现丝杆非线性导致的震荡
+            elif(movetimes > 50):                                      #前30次不能调整成功，说明出现丝杆非线性导致的震荡
                 aimmove = 3                                            #每种步长的调节总长度都要比前一种步长的调节总长度大，以保证覆盖调节范围
-            elif(movetimes > 20):                                      #前20次不能调整成功，说明出现丝杆非线性导致的震荡
+            elif(movetimes > 40):                                      #前20次不能调整成功，说明出现丝杆非线性导致的震荡
                 aimmove = 4                                            #以小步数进行微调，以抵抗非线性带来的震荡，提高精度
+            elif(movetimes > 20):                                      #多测一轮线性降低行程，提高调节概率，增加行程
+                if(aimmove > (movetimes-20)):                          
+                    aimmove = aimmove + 20 - movetimes 
             if(self.target_tension*(1+self.mdl.mistake) <  self.mdl.current_tension):
-                self.set_move(0,aimmove)
-                self.mdl.current_place = self.mdl.current_place - aimmove
+                # self.set_move(0,aimmove)
+                # self.mdl.current_place = self.mdl.current_place - aimmove
                 self.get_adc()
                 self.adc_to_num(self.mdl.current_place_adc)
+                return 1
             elif(self.target_tension*(1-self.mdl.mistake) >  self.mdl.current_tension):
                 self.set_move(1,aimmove)
                 self.mdl.current_place = self.mdl.current_place + aimmove
                 self.get_adc()
                 self.adc_to_num(self.mdl.current_place_adc)
             else:
-                self.gcode.respond_info("ACK_mdl_pos success!")
-                break   
+                return 1    
+    
+    def set_tension(self):
+        self.init_adc_to_num()
+        self.get_adc()
+        self.adc_to_num(self.mdl.current_place_adc)
+        for i in range(2):
+            self.run_tension()
+            self.gcode.run_script_from_command("RESET_HOME_AXES_XY")
+            self.gcode.run_script_from_command("MOTOR_CONTROL NUM=1 DATA=2")  
+            self.gcode.run_script_from_command("MOTOR_CONTROL NUM=2 DATA=2")
+            self.printer.get_reactor().pause(self.printer.get_reactor().monotonic() + 0.3)
+            self.gcode.run_script_from_command("FORCE_MOVE STEPPER=stepper_x DISTANCE=-200 VELOCITY=60")
+            self.gcode.run_script_from_command("FORCE_MOVE STEPPER=stepper_y DISTANCE=200 VELOCITY=60")
+            self.gcode.run_script_from_command("M400")
+            self.gcode.run_script_from_command("FORCE_MOVE STEPPER=stepper_x DISTANCE=200 VELOCITY=60")
+            self.gcode.run_script_from_command("FORCE_MOVE STEPPER=stepper_y DISTANCE=-200 VELOCITY=60")
+            self.gcode.run_script_from_command("M400")
+            self.gcode.run_script_from_command("MOTOR_CONTROL NUM=1 DATA=1")
+            self.gcode.run_script_from_command("MOTOR_CONTROL NUM=2 DATA=1")
+            self.gcode.run_script_from_command("M84")
+        run_result = self.run_tension()
+        if(run_result == 0):
+            if self.name == 'mdlx':
+                raise self.printer.command_error("""{"code":"key718", "msg":"Belt tensioning timeout: '%s'", "values": []}"""% (self.name))
+            if self.name == 'mdly':
+                raise self.printer.command_error("""{"code":"key719", "msg":"Belt tensioning timeout: '%s'", "values": []}"""% (self.name))
         self.write_flash()
-        # mdl_ten_buf = self.mdl_ten.send([self.oid, 1])
-        # self.gcode.respond_info("ACK_mdl_ten: %s"%str(mdl_ten_buf))
         pass
 
     def set_tension_correction(self):
@@ -335,16 +357,9 @@ class BELT_MDL:
             flash_data0 = flash_buf[2][1:5]   #获取数据4位一组
             flash_data1 = flash_buf[2][5:9]
             flash_data2 = flash_buf[2][9:13]
-            # self.gcode.respond_info("flash_data_num:%s"%flash_data_num)
-            # self.gcode.respond_info("flash_data0:%s"%flash_data0)
-            # self.gcode.respond_info("flash_data1:%s"%flash_data1)
-            # self.gcode.respond_info("flash_data2:%s"%flash_data2)
             flash_data_num0 = bytes_to_int(flash_data0)   #把4位一组的数据转换为32位的数值
             flash_data_num1 = bytes_to_int(flash_data1)
             flash_data_num2 = bytes_to_int(flash_data2)
-            # self.gcode.respond_info("flash_data_num0:%s"%flash_data_num0)
-            # self.gcode.respond_info("flash_data_num1:%s"%flash_data_num1)
-            # self.gcode.respond_info("flash_data_num2:%s"%flash_data_num2)
             self.mdl.current_place = flash_data_num0       #当前滑块位置，单位 0.01mm*
             self.mdl.idl_adc = flash_data_num1             #应变片空载时的 ADC 值，即 去皮/归零*
             self.mdl.full_adc = flash_data_num2            #应变片满载时的 ADC 值，即 最大负载*
@@ -382,18 +397,9 @@ class BELT_MDL:
         data0 = self.mdl.current_place       #当前滑块位置，单位 0.01mm*
         data1 = self.mdl.idl_adc             #应变片空载时的 ADC 值，即 去皮/归零*
         data2 = self.mdl.full_adc            #应变片满载时的 ADC 值，即 最大负载*
-        # data0 = 0x01020304
-        # data1 = 0x11223344
-        # data2 = 0x04030201
-        # self.gcode.respond_info("write_data0:%s"%data0)
-        # self.gcode.respond_info("write_data1:%s"%data1)
-        # self.gcode.respond_info("write_data2:%s"%data2)
         buf_data0 = split_to_bytes(data0)   #把32位的数值转换成4个8位的数据
         buf_data1 = split_to_bytes(data1)   
         buf_data2 = split_to_bytes(data2)
-        # self.gcode.respond_info("buf_data0:%s"%buf_data0)
-        # self.gcode.respond_info("buf_data1:%s"%buf_data1)
-        # self.gcode.respond_info("buf_data2:%s"%buf_data2)
         data_buf = buf_data0                #把数据合成一个列表
         data_buf.extend(buf_data1)
         data_buf.extend(buf_data2)
@@ -406,23 +412,13 @@ class BELT_MDL:
             flash_data0 = flash_buf[2][1:5]    #数据内容
             flash_data1 = flash_buf[2][5:9]
             flash_data2 = flash_buf[2][9:13]
-            # self.gcode.respond_info("flash_data_num:%s"%flash_data_num)
-            # self.gcode.respond_info("flash_data0:%s"%flash_data0)
-            # self.gcode.respond_info("flash_data1:%s"%flash_data1)
-            # self.gcode.respond_info("flash_data2:%s"%flash_data2)
             flash_data_num0 = bytes_to_int(flash_data0)     #把数据由4个8位数据转换位32位数值
             flash_data_num1 = bytes_to_int(flash_data1)
             flash_data_num2 = bytes_to_int(flash_data2)
-            # self.gcode.respond_info("flash_data_num0:%s"%flash_data_num0)
-            # self.gcode.respond_info("flash_data_num1:%s"%flash_data_num1)
-            # self.gcode.respond_info("flash_data_num2:%s"%flash_data_num2)
             if((self.mdl.current_place == flash_data_num0)|(self.mdl.idl_adc == flash_data_num1)|(self.mdl.full_adc == flash_data_num2)): 
                 return 1     #flash写入成功，写读数据一致
             else:
                 return -1    #flash写入失败，写读数据不一致
-            # self.gcode.respond_info("current_place:%s"%flash_data_num0)
-            # self.gcode.respond_info("idl_adc:%s"%flash_data_num1)
-            # self.gcode.respond_info("full_adc:%s"%flash_data_num2)
         pass 
 
     def get_adc_buf(self):                       #获取ADC数据
@@ -508,7 +504,7 @@ class BELT_MDL:
                 raise self.printer.command_error("""{"code":"key720", "msg":"The calibration value of the strain gauge is zero: '%s'calibration_num_error", "values": []}"""% (self.name))
             if self.name == 'mdly':
                 raise self.printer.command_error("""{"code":"key721", "msg":"The calibration value of the strain gauge is zero: '%s'calibration_num_error", "values": []}"""% (self.name))
-        adc_difference = abs(self.mdl.idl_adc-self.mdl.full_adc)
+        # adc_difference = abs(self.mdl.idl_adc-self.mdl.full_adc)
         # if(adc_difference<30000):
         #     if self.name == 'mdlx':
         #         raise self.printer.command_error("""{"code":"key720", "msg":"The calibration value of the strain gauge is too small: '%s'calibration_num_error", "values": []}"""% (self.name))

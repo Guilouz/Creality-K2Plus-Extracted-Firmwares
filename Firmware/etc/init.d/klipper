@@ -209,8 +209,12 @@ copy_config()
     }
 
     # delete old gcodes
-    rm -f ${GCODE_FILES_DIR}/3DBench_PLA_25m.gcode
-    rm -f ${GCODE_FILES_DIR}/Crealitylogo_PLA_35m.gcode
+    if [ "x$model" = "xF008" ]; then
+        rm -f ${GCODE_FILES_DIR}/3DBench_PLA_25m.gcode
+        rm -f ${GCODE_FILES_DIR}/3DBench_PLA_14m.gcode
+        rm -f ${GCODE_FILES_DIR}/3DBenchy_PLA_34m9s.gcode
+        rm -f ${GCODE_FILES_DIR}/Crealitylogo_PLA_35m.gcode
+    fi
 
     rsync -a $GCODE_PATH/* ${GCODE_FILES_DIR}/
     sync
