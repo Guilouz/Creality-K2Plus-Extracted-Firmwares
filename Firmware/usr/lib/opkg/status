@@ -462,7 +462,7 @@ Installed-Time: 1732671709
 Auto-Installed: yes
 
 Package: base-files
-Version: 4-r0-27e3ccb81
+Version: 4-r0-d5e7fdaab
 Depends: libc, librt, libpthread, netifd, procd, jsonfilter, fstools, fwtool
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -600,7 +600,7 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1732671709
 
 Package: allwinner_uvc
-Version: dbcecb3
+Version: 946eaa3
 Depends: libc, librt, libpthread, libcrlog, libopenssl1.1, libshm, webrtc, libuapi, libcedarx, ncnn_yolov5
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -1731,7 +1731,7 @@ Installed-Time: 1732671709
 Auto-Installed: yes
 
 Package: klipper
-Version: 85a4d238
+Version: d67901db
 Depends: libc, librt, libpthread, python3, python3-setuptools, calc_psd
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -1810,7 +1810,7 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1732671709
 
 Package: lvgl_klipper
-Version: 04f640de
+Version: 3011c4d8f
 Depends: libc, librt, libpthread, libcrlog, aliyun-oss-cpp-sdk, libapr, libaprutil, libatomic1, libffmpeg-full, libblobmsg-json20210516, libopenssl1.1, libcurl4, libfreetype, libhv, libinotifytools, libjpeg, libjson-c5, jsoncpp, mxml, libpng, paho-mqtt-c, libprotobuf-c, libqrencode, libstdcpp6, libubox20210516, libubus20210630, libuuid1, wifimanager-v2.0-lib, libcxcloud
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -2094,7 +2094,7 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1732671709
 
 Package: webrtc
-Version: f0954b0
+Version: 22a2b5d
 Depends: libc, librt, libpthread, libcrlog, cJSON, libnice, libwebsockets, libsrtp
 Status: install user installed
 Architecture: arm_cortex-a7_neon

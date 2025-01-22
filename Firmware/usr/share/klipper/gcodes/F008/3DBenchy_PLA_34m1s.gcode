@@ -6,6 +6,13 @@
 ; max_z_height: 47.96
 ; HEADER_BLOCK_END
 
+; MINX = 145.00
+; MINY = 159.50
+; MINZ = 0.00
+; MAXX = 205.00
+; MAXY = 231.63
+; MAXZ = 48.00
+
 ; THUMBNAIL_BLOCK_START
 
 ;
