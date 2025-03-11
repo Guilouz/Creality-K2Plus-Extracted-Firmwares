@@ -91,7 +91,10 @@ class Heater:
                         break
                 if num == 12:
                     self.stop_heating = True
-                    gcode._respond_error("""{"code":"key519", "msg":"PTC fan_speed is 0, turn off PTC heaters", "values":[]}""")
+                    ptc_fan_last_speed = -1
+                    if self.config.has_section("heater_fan chamber_fan"):
+                        ptc_fan_last_speed = self.printer.lookup_object("heater_fan chamber_fan").last_speed
+                    gcode._respond_error("""{"code":"key519", "msg":"PTC fan_speed is 0, turn off PTC heaters, ptc_fan_last_speed:%s", "values":[]}""" % ptc_fan_last_speed)
                     gcode.run_script_from_command("M141 S0")               
         return eventtime + 1.0
 

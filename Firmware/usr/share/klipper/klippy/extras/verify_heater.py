@@ -56,6 +56,11 @@ class HeaterCheck:
                 self.error = 0.
             self.last_target = target
             return eventtime + 1.
+        if self.heater_name == "chamber_heater" and target > 40 and self.heater.last_pwm_value == 0:
+            # Chamber heater is not heating
+            if temp <= target + self.hysteresis:
+                self.error = 0.
+            return eventtime + 1.
         self.error += (target - self.hysteresis) - temp
         if not self.approaching_target:
             if target != self.last_target:
