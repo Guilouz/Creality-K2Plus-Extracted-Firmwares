@@ -41,6 +41,8 @@ class PrinterHeaterFan:
                     speed = 0
                 else:
                     speed = 0.3
+                if chamber_heater.control.count!=20:
+                    speed = 0
         if speed != self.last_speed:
             self.last_speed = speed
             curtime = self.printer.get_reactor().monotonic()

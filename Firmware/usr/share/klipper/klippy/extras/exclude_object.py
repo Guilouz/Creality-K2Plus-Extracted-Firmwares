@@ -252,6 +252,10 @@ class ExcludeObject:
             self._list_excluded_objects(gcmd)
 
     cmd_EXCLUDE_OBJECT_DEFINE_help = "Provides a summary of an object"
+
+    # def cmd_GET_EXCLUDE_OBJECTS(self, gcmd):
+    #     self.objects = json.load(open('/tmp/objects.json', 'r'))
+
     def cmd_EXCLUDE_OBJECT_DEFINE(self, gcmd):
         reset = gcmd.get('RESET', None)
         name = gcmd.get('NAME', '').upper()
@@ -286,8 +290,9 @@ class ExcludeObject:
             self._list_objects(gcmd)
 
     def _add_object_definition(self, definition):
-        self.objects = sorted(self.objects + [definition],
-                              key=lambda o: o["name"])
+        # self.objects = sorted(self.objects + [definition],
+        #                       key=lambda o: o["name"])
+        self.objects = self.objects + [definition]
 
     def _exclude_object(self, name):
         self._register_transform()

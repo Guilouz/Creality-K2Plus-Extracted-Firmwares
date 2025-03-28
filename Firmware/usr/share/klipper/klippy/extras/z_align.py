@@ -1,4 +1,5 @@
-import mcu, logging
+import mcu, logging, os
+from extras.base_info import base_dir
 
 """
 [z_align]
@@ -35,8 +36,7 @@ class Zalign:
         self.timeout = self.config.getsection('z_align').getint('timeout')
         self.retries = self.config.getsection('z_align').getint('retries')
         self.retry_tolerance = self.config.getsection('z_align').getint('retry_tolerance')
-        self.endstop_pin_z = self.config.getsection('z_align').get('endstop_pin_z')                                       
-        self.endstop_pin_z1 = self.config.getsection('z_align').get('endstop_pin_z1') 
+        self.endstop_pin_z = self.config.getsection('z_align').getlist('endstop_pin_z')     
         self.zd_up = self.config.getsection('z_align').getint('zd_up')
         self.zes_untrig = self.config.getsection('z_align').getint('zes_untrig')
         self.zmax_safe_pox_diff = self.config.getsection('z_align').getint('zmax_safe_pox_diff')
@@ -55,6 +55,7 @@ class Zalign:
         self.is_already_zodwn = False
         webhooks = self.printer.lookup_object('webhooks')
         webhooks.register_endpoint("zdown_force_stop", self.zdown_force_stop)
+        self.real_zmax_path = os.path.join(base_dir, "creality/userdata/config/real_zmax.json")
     def zdown_force_stop(self, web_request):
         self.force_stop_flag = True
         self.gcode.respond_info("zdown_force_stop start")
@@ -62,27 +63,24 @@ class Zalign:
         self.gcode.respond_info("zdown_force_stop end")
         web_request.send({"result": "success"})
     def _build_config(self):  
-        stepper_indx_z = 0
-        stepper_indx_z1 = 1   
-        step_pin_z = self.config.getsection('stepper_z').get('step_pin') 
-        step_pin_z1 = self.config.getsection('stepper_z1').get('step_pin')    
-        dir_pin_z = self.config.getsection('stepper_z').get('dir_pin') 
-        dir_pin_z1 = self.config.getsection('stepper_z1').get('dir_pin')                                                                                                            
-
         config_z_align = "config_z_align oid=%d"%self.oidz
-        config_z_align_add_z = "config_z_align_add oid=%d z_indx=%d zs_pin=%s" \
-                                " zd_pin=%s zd_up=%d zes_pin=%s zes_untrig=%d" % (
-                                    self.oidz, stepper_indx_z, step_pin_z, dir_pin_z, self.zd_up, self.endstop_pin_z, self.zes_untrig)
-        config_z_align_add_z1 = "config_z_align_add oid=%d z_indx=%d zs_pin=%s" \
-                                " zd_pin=%s zd_up=%d zes_pin=%s zes_untrig=%d" % (
-                                    self.oidz, stepper_indx_z1, step_pin_z1, dir_pin_z1, self.zd_up, self.endstop_pin_z1, self.zes_untrig)
         logging.info(config_z_align)
         self.mcu.add_config_cmd(config_z_align)
-        logging.info(config_z_align)
-        self.mcu.add_config_cmd(config_z_align_add_z)
-        logging.info(config_z_align)
-        self.mcu.add_config_cmd(config_z_align_add_z1)
+        for stepper_indx_z, endstop_pin in enumerate(self.endstop_pin_z):
+            step_pin_z = self.config.getsection(f'stepper_z{stepper_indx_z}' if stepper_indx_z > 0 else 'stepper_z').get('step_pin')
+            dir_pin_z = self.config.getsection(f'stepper_z{stepper_indx_z}' if stepper_indx_z > 0 else 'stepper_z').get('dir_pin')
+            # 如果遇到step_dir是取反值，需要将取反去掉，否则下位机无法识别，并且修改zd_up配置，使Z电机正常方向运动
+            if dir_pin_z.startswith('!'):
+                dir_pin_z = dir_pin_z[1:]
+            config_z_align_add_z = "config_z_align_add oid=%d z_indx=%d zs_pin=%s" \
+                                    " zd_pin=%s zd_up=%d zes_pin=%s zes_untrig=%d" % (
+                                        self.oidz, stepper_indx_z, step_pin_z, dir_pin_z, self.zd_up, endstop_pin, self.zes_untrig)
+            self.mcu.add_config_cmd(config_z_align_add_z)
+            logging.info("[stepper_indx_z=%d] config_z_align_add oid=%d z_indx=%d zs_pin=%s zd_pin=%s zd_up=%d zes_pin=%s zes_untrig=%d" % (
+                stepper_indx_z, self.oidz, stepper_indx_z, step_pin_z, dir_pin_z, self.zd_up, endstop_pin, self.zes_untrig))
         self.z_align_force_stop = self.mcu.lookup_command("z_align_force_stop oid=%c", cq=None)
+    def get_real_zmax_path(self):
+        return self.real_zmax_path
     def cmd_ZDOWN_FORCE_STOP(self, gcmd):
         self.force_stop_flag = True
         self.gcode.respond_info("zdown_force_stop start")
@@ -189,8 +187,9 @@ class Zalign:
         toolhead = self.printer.lookup_object('toolhead')
         now_pos = toolhead.get_position()
         toolhead.set_position(now_pos, homing_axes=(2,))
-        self.gcode.run_script_from_command("SET_STEPPER_ENABLE STEPPER=stepper_z ENABLE=1")
-        self.gcode.run_script_from_command("SET_STEPPER_ENABLE STEPPER=stepper_z1 ENABLE=1")
+        for stepper_indx_z in range(len(self.endstop_pin_z)):
+            stepper_name = f"stepper_z{stepper_indx_z}" if stepper_indx_z > 0 else "stepper_z"
+            self.gcode.run_script_from_command(f"SET_STEPPER_ENABLE STEPPER={stepper_name} ENABLE=1")
         self.cur_retries = 0
         while True:
             if self.cur_retries < self.retries:
@@ -243,16 +242,14 @@ class Zalign:
         max_z = self.config.getsection('stepper_z').getfloat('position_max', default=360)
         logging.info("stepper_z position_max:%s" % max_z)
         data = max_z - 10
-        if self.config.has_section("z_tilt"):
-            z_tilt = self.printer.lookup_object('z_tilt')
-            if os.path.exists(z_tilt.real_zmax_path):
-                try:
-                    with open(z_tilt.real_zmax_path, "r") as f:
-                        data = json.loads(f.read()).get("zmax", 0)
-                        if data > max_z:
-                            data = max_z - 10
-                except Exception as err:
-                    logging.error(err)
+        if os.path.exists(self.real_zmax_path):
+            try:
+                with open(self.real_zmax_path, "r") as f:
+                    data = json.loads(f.read()).get("zmax", 0)
+                    if data > max_z:
+                        data = max_z - 10
+            except Exception as err:
+                logging.error(err)
         self.gcode.respond_info("real_zmax:%s"%data)
         return data  
 

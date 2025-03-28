@@ -1,0 +1,11 @@
+Package: kmod-net-aic8800
+Version: 5.4.182-1
+Depends: kernel (=5.4.182-1-unknown), aic8800-firmware
+Source: package/kernel/linux
+SourceName: kmod-net-aic8800
+License: GPL-2.0
+Section: kernel
+SourceDateEpoch: 1688356042
+Architecture: arm_cortex-a7_neon
+Installed-Size: 185788
+Description:  Kernel modules for aic8800 support

@@ -4,8 +4,8 @@ Depends: libc, librt, libpthread
 Source: package/firmware/linux-firmware
 SourceName: ap6212-firmware
 Section: firmware
-SourceDateEpoch: 1710571375
+SourceDateEpoch: 1741167646
 Maintainer: Allwinner
 Architecture: arm_cortex-a7_neon
-Installed-Size: 294229
+Installed-Size: 294230
 Description:  bcmdhd ap6212 firmware

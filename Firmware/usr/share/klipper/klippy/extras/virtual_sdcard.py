@@ -567,7 +567,7 @@ class VirtualSD:
 
     def load_gcode_metadata(self, file_path=""):
         self.gcode_metadata = self.get_print_file_metadata(file_path)
-        self.gcode.respond_info("gcode_metadata: %s" % (self.gcode_metadata))
+        logging.info("gcode_metadata: %s" % (self.gcode_metadata))
 
     def record_print_history(self, file_path=""):
         try:

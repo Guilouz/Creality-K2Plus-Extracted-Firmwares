@@ -49,6 +49,7 @@
 /etc/sysConfig/UIResource/K1_Max/img_nozzle.png
 /etc/sysConfig/UIResource/K1_Max/img_eye.png
 /etc/sysConfig/UIResource/K1/print_success.png
+/etc/sysConfig/UIResource/K1/ui_img_chamber_heating.png
 /etc/sysConfig/UIResource/K1/Visible.png
 /etc/sysConfig/UIResource/K1/img_k2plus_machine.png
 /etc/sysConfig/UIResource/K1_Max/img_vector_1120.png
@@ -92,6 +93,7 @@
 /etc/sysConfig/audio/chinese/1.sound_button_technology.wav
 /etc/sysConfig/UIResource/K1/selected_state.png
 /etc/sysConfig/defData/laser_offset_correction.gcode
+/etc/sysConfig/UIResource/K1/EstateRunoutIn.png
 /etc/sysConfig/UIResource/K1/lightopen.png
 /etc/sysConfig/UIResource/K1/EstateNormal.png
 /etc/sysConfig/UIResource/K1/color_fila_prev.png
@@ -102,6 +104,7 @@
 /etc/sysConfig/UIResource/K1/SwitchAxisStep1.png
 /etc/sysConfig/UIResource/K1/belt_install_right_tool.png
 /etc/sysConfig/UIResource/K1/img_boot4.png
+/etc/sysConfig/UIResource/K1/nozzle_fila_empty.png
 /etc/sysConfig/UIResource/K1/auto_refill_prev_page.png
 /etc/sysConfig/UIResource/K1/img_fila_k2plus.png
 /etc/sysConfig/UIResource/K1/wifi_state_2.png
@@ -130,6 +133,7 @@
 /etc/sysConfig/UIResource/K1_Max/img_edit.png
 /etc/sysConfig/UIResource/K1/SortSelect.png
 /etc/sysConfig/UIResource/K1/Add.png
+/etc/sysConfig/UIResource/K1/img_cfs_hub_indicator_light.png
 /etc/sysConfig/UIResource/K1/hotendicon.png
 /etc/sysConfig/UIResource/K1/auto_refill_next_page.png
 /usr/bin/app-server
@@ -137,11 +141,15 @@
 /etc/sysConfig/UIResource/K1/img_rfid_flag.png
 /etc/sysConfig/UIResource/K1/ui_img_dir_up.png
 /etc/sysConfig/UIResource/K1/img_spool_holder.png
+/etc/sysConfig/UIResource/K1/EstateRunoutOut.png
+/etc/sysConfig/UIResource/K1/img_cfs_hub_light.png
+/etc/sysConfig/UIResource/K1/nozzle_fila_full.png
 /etc/sysConfig/UIResource/K1/img_cfs_humidity_height.png
 /etc/sysConfig/UIResource/K1/zoffset_Add_Focus.png
 /etc/sysConfig/UIResource/K1/print_completed.png
 /etc/sysConfig/UIResource/K1/zoffset_Sub_Focus.png
 /etc/sysConfig/UIResource/K1_Max/img_polygon.png
+/etc/sysConfig/UIResource/K1/EstateRunout.png
 /etc/sysConfig/UIResource/K1/wait.png
 /etc/sysConfig/UIResource/K1/SwitchAxisStep3.png
 /etc/sysConfig/UIResource/K1/img_guide_page1.png

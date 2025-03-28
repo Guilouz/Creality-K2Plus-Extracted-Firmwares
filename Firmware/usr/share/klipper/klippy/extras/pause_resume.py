@@ -9,6 +9,7 @@ from .tool import reportInformation
 class PauseResume:
     def __init__(self, config):
         self.printer = config.get_printer()
+        self.reactor = self.printer.get_reactor()
         self.gcode = self.printer.lookup_object('gcode')
         self.recover_velocity = config.getfloat('recover_velocity', 50.)
         self.v_sd = None
@@ -181,6 +182,7 @@ class PauseResume:
             return
         if self.resume_err == True:
             logging.info("resume_err is True")
+            self.reactor.pause(self.reactor.monotonic() + 0.5)
             self.resume_err = False
             return
         velocity = gcmd.get_float('VELOCITY', self.recover_velocity)

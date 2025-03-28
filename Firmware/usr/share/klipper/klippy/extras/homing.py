@@ -467,17 +467,17 @@ class PrinterHoming:
             # if check_protection:
             #     gcode.run_script_from_command("MOTOR_CHECK_PROTECTION_AFTER_HOME DATA=10") # 查询电机是否有错误码
     def write_real_zmax(self, data):
+        z_align = self.printer.lookup_object('z_align')
         max_z = self.config.getsection('stepper_z').getfloat('position_max', default=360)
         logging.info("stepper_z position_max:%s" % max_z)
         if data < max_z-15 or data > max_z:
             logging.error("real zmax out of range[%s, %s]: %s" % ((max_z-15), max_z, data))
             return
-        if self.config.has_section("z_tilt"):
-            z_tilt = self.printer.lookup_object('z_tilt')
-            with open(z_tilt.real_zmax_path, "w") as f:
-                logging.info("real_zmax_path write zmax:%s" % data)
-                f.write(json.dumps({"zmax": data}))
-                f.flush()
+        real_zmax_path = z_align.get_real_zmax_path()
+        with open(real_zmax_path, "w") as f:
+            logging.info("real_zmax_path write zmax:%s" % data)
+            f.write(json.dumps({"zmax": data}))
+            f.flush()
 
     def run_G28_two_Z(self):
         try:

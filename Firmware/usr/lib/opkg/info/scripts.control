@@ -4,7 +4,7 @@ Depends: libc, librt, libpthread
 Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/scripts
 SourceName: scripts
 Section: creality
-SourceDateEpoch: 1729672876
+SourceDateEpoch: 1741343277
 Architecture: arm_cortex-a7_neon
-Installed-Size: 2497113
+Installed-Size: 2501406
 Description:  with scripts support

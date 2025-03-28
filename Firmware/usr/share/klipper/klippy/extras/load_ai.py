@@ -291,6 +291,7 @@ class LoadAI:
             self.toolhead.wait_moves() # M400
             self.gcode.run_script_from_command("G1 X9 F12000")
             self.toolhead.wait_moves() # M400
+            self.reactor.pause(self.reactor.monotonic() + 2)
             self.gcode.respond_info("WILL LOAD_AI_DEAL")
             # LOAD_AI_DEAL
             self.gcode.run_script_from_command("LOAD_AI_DETECT_WASTE")  # 废料槽检测

@@ -30,6 +30,7 @@ class Heater:
         self.sensor.setup_callback(self.temperature_callback)
         self.pwm_delay = self.sensor.get_report_time_delta()
         # Setup temperature checks
+        self.verify_heater = config.getboolean('verify_heater', True)
         self.min_extrude_temp = config.getfloat(
             'min_extrude_temp', 170.,
             minval=self.min_temp, maxval=self.max_temp)
@@ -58,7 +59,8 @@ class Heater:
         self.mcu_pwm.setup_cycle_time(pwm_cycle_time)
         self.mcu_pwm.setup_max_duration(MAX_HEAT_TIME)
         # Load additional modules
-        self.printer.load_object(config, "verify_heater %s" % (self.name,))
+        if self.verify_heater:
+            self.printer.load_object(config, "verify_heater %s" % (self.name,))
         self.printer.load_object(config, "pid_calibrate")
         gcode = self.printer.lookup_object("gcode")
         gcode.register_mux_command("SET_HEATER_TEMPERATURE", "HEATER",
@@ -249,6 +251,10 @@ class ControlBangBang:
             fan_feedback = self.printer.lookup_object('fan_feedback')
             fan_speed = fan_feedback.cx_fan_status.get("fan0_speed", 0)
         is_chamber_heater = True if self.heater.name == "chamber_heater" else False
+        if is_chamber_heater and target_temp and self.count < 20 and self.heater.last_pwm_value > 0:
+            self.count += 1
+        elif is_chamber_heater and target_temp and self.heater.last_pwm_value == 0:
+            self.count = 0
         if self.heating:
             if self.prev_temp > 0.1:
                 if self.prev_temp - target_temp > 3.:
@@ -290,10 +296,10 @@ class ControlBangBang:
             #         self.temp_coff = 1.0      
             # 使用count来计数PTC加热的时间,count=20的时候,大约是连续加热了6s
             # temp_coff == 0 时对count进行重置
-            if is_chamber_heater and target_temp and self.count < 20 and self.temp_coff > 0:
-                self.count += 1
-            elif is_chamber_heater and target_temp and self.temp_coff == 0:
-                self.count = 0
+            #if is_chamber_heater and target_temp and self.count < 20 and self.heater.last_pwm_value > 0:
+            #    self.count += 1
+            #elif is_chamber_heater and target_temp and self.temp_coff == 0:
+            #    self.count = 0
             # # 到达目标温度附近时, 加热功率调小到12%
             # if is_chamber_heater and temp > target_temp+self.max_delta:
             #     self.temp_coff = 0
@@ -314,7 +320,7 @@ class ControlBangBang:
                 self.prev_temp = 0.
                 self.temp_coff = 1.0
             if is_chamber_heater:
-                self.count = 0
+            #    self.count = 0
                 self.heater.start_heating_seconds = 0 
 
     def check_busy(self, eventtime, smoothed_temp, target_temp):
