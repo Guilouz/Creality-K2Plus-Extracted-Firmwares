@@ -469,6 +469,12 @@ class ProbePointsHelper:
         # self.safe_z_home.cmd_G28(g28_gcmd)
         while 1:
             done = self._move_next()
+
+            # 增加等待时间，用于倾斜校准等待一小段时间，避免干扰
+            wait_time = gcmd.get_float('WAITTIME', default = 0)
+            if wait_time != 0:
+                logging.info("Z_TILT_ADJUST wait_time: %s" % wait_time)
+                self.printer.get_reactor().pause(self.printer.get_reactor().monotonic() + wait_time)
             if done:
                 break
             pos = probe.run_probe(gcmd)

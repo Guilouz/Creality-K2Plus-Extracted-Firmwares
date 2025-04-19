@@ -454,7 +454,7 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1741167646
 
 Package: ncnn_yolov5
-Version: 2860a27c
+Version: 775cd532
 Depends: libc, librt, libpthread, libpthread, librt, libstdcpp6, zlib, libjpeg, libfreetype, opencv, libjson-c5, libcurl4
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -462,7 +462,7 @@ Installed-Time: 1741167646
 Auto-Installed: yes
 
 Package: base-files
-Version: 4-r0-ac7f2ef96
+Version: 4-r0-0763e429f
 Depends: libc, librt, libpthread, netifd, procd, jsonfilter, fstools, fwtool
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -482,7 +482,7 @@ Conffiles:
  /etc/passwd 6a451aa33393f47ade89b8bce4d9711818c2630394c3967265ffed276bb25a55
  /etc/profile c7e4ca53232e015d6f7262ed48bf964a7ee995d034e34a36589c51a110af4daa
  /etc/protocols 7d551355d5540b07b9d86e623cbbc4abecbb94d2a662b3afcc917940eb0e3d52
- /etc/rc.local 515018aa94eb4937dade12dc0d69890b352af35a5ab5fb8203f9ed10990ac06f
+ /etc/rc.local 0bccf92a46f64cf306cebe2760f54a056e782d3bab2380ff04a21b26dcaf9c5e
  /etc/services 754ccc71ca347bc79ac4c45139d416b7cf1e65a919dad1db15613a216cd6b9cc
  /etc/shadow c6db3a6e4689309ac304821511c58ace6d3f1edc9d2e44c57792e1d46a88ef0d
  /etc/shells 8b35ce73c18161a7d7ed16fa244410993bd031515260e3e0c11749047df48d0a
@@ -714,7 +714,7 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1741167646
 
 Package: libcxcloud
-Version: 8437c29
+Version: 1ffb566
 Depends: libc, librt, libpthread, libcrlog, aliyun-oss-cpp-sdk, libapr, libaprutil, libopenssl1.1, libcurl4, libjson-c5, jsoncpp, mxml, paho-mqtt-c, libstdcpp6, libuuid1, libpng, libqrencode, aliyun-oss-c-sdk, aliyun-vod-sdk
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -1572,7 +1572,7 @@ Installed-Time: 1741167646
 
 Package: cam_fw
 Version: 00f8017
-Depends: libc, librt, libpthread
+Depends: libc, librt, libpthread, libusb-1.0-0
 Status: install user installed
 Architecture: arm_cortex-a7_neon
 Installed-Time: 1741167646
@@ -1738,7 +1738,7 @@ Installed-Time: 1741167646
 Auto-Installed: yes
 
 Package: klipper
-Version: 9952c945
+Version: aadaea40
 Depends: libc, librt, libpthread, python3, python3-setuptools, calc_psd
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -1782,13 +1782,6 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1741167646
 Auto-Installed: yes
 
-Package: kmod-net-aic8800
-Version: 5.4.182-1
-Depends: kernel (= 5.4.182-1-unknown), aic8800-firmware
-Status: install user installed
-Architecture: arm_cortex-a7_neon
-Installed-Time: 1741167646
-
 Package: libgcc1
 ABIVersion: 1
 Version: (null)-3
@@ -1824,7 +1817,7 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1741167646
 
 Package: lvgl_klipper
-Version: 334285bb8
+Version: 51e44e18e
 Depends: libc, librt, libpthread, libcrlog, aliyun-oss-cpp-sdk, libapr, libaprutil, libatomic1, libffmpeg-full, libblobmsg-json20210516, libopenssl1.1, libcurl4, libfreetype, libhv, libinotifytools, libjpeg, libjson-c5, jsoncpp, mxml, libpng, paho-mqtt-c, libprotobuf-c, libqrencode, libstdcpp6, libubox20210516, libubus20210630, libuuid1, wifimanager-v2.0-lib, libcxcloud
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -2110,14 +2103,6 @@ Installed-Time: 1741167646
 Package: webrtc
 Version: 22a2b5d
 Depends: libc, librt, libpthread, libcrlog, cJSON, libnice, libwebsockets, libsrtp
-Status: install user installed
-Architecture: arm_cortex-a7_neon
-Installed-Time: 1741167646
-Auto-Installed: yes
-
-Package: aic8800-firmware
-Version: 1
-Depends: libc, librt, libpthread
 Status: install user installed
 Architecture: arm_cortex-a7_neon
 Installed-Time: 1741167646

@@ -1,4 +1,9 @@
 # Put your custom commands here that should be executed once
 # the system init finished. By default this file does nothing.
 
+level=$(fw_printenv -n loglevel)
+if [ "x$level" != "x0" ]; then
+    fw_setenv loglevel 0
+fi
+
 exit 0

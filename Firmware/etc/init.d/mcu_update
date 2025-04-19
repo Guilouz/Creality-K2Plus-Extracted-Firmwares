@@ -292,6 +292,10 @@ auto_update()
                     fw_dir=F008
                     skip_bed0=true
                     need_extruder=true
+                elif [ "$model" = "GS-03" ]; then
+                    fw_dir=F008
+                    skip_bed0=true
+                    need_extruder=true
                 elif [ "$model" = "F012" -o "$model" = "F021" ]; then
                     fw_dir=F008
                     skip_bed0=true

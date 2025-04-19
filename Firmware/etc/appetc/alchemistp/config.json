@@ -1,0 +1,22 @@
+{
+    "SystemRootInfoFilePath":"/creality/userdata/config/user_data_not_deleted.json",
+    "FilePipePath":"/creality/userdata/config/pipe.json",
+    "FilePipeQTPath":"/creality/userdata/config/statistic.json",
+    "SystemConfigFilePath" :"/creality/userdata/config/system_config.json",
+    "CXSWUserInfoFilePath" : "/creality/userdata/cloud/user_info.json",
+    "PrintHistoryFilePath" : "/creality/gui/config/print_list.json",
+    "WebserverSqliteFilePath": "/printer_data/database/nexusp-sql.db",
+    "printHistoryCmd" : "/usr/apps/usr/bin/print_history",
+    "HOSTNAME":"api.crealitycloud.com",
+    "SERVERURL":"https://c-smart.cxswyjy.com",    
+    "SERVERURL_ENDPRINT":"http://csai.cxswyjy.com/cxapi/v1/end_print2",
+    "SERVERURL_FLOW":"http://172.23.89.142:9999/cxapi/v1/flow",
+    "SERVERURL_AIENGINE_JPG":"http://csai.cxswyjy.com/cxapi/v1/ai_engine_jpg",
+    "TEST_SERVERURL_AIENGINE_JPG":"http://172.23.88.143:9999/cxapi/v1/ai_engine_jpg",
+    "SERVERURL_DEVICE":"https://c-smart.cxswyjy.com/api/v3/info",
+    "VERSION":"V2.0.5",
+    "is_x2600":"0",
+    "dev_server_url":"http://172.23.88.185:8080/api/v1/",
+    "IDC_SERVER_URL":"https://devdata.cxswyjy.com/api/v1/",
+    "__debug":"0"
+    }

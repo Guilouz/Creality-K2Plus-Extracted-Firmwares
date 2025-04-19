@@ -4,6 +4,7 @@
 /usr/bin/timezone.sh
 /usr/bin/log_main
 /usr/res/480_800/white_480x800.jpg
+/etc/appetc/alchemistp/config.json
 /usr/bin/clear_sn_mac.sh
 /usr/bin/get_sn_mac.sh
 /usr/res/480_800/grayscale_480x800.jpg

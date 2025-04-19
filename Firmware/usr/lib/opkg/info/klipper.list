@@ -342,6 +342,7 @@
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/exceptions.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/chardet/codingstatemachine.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/chardet/hebrewprober.pyc
+/usr/share/klipper/gcodes/GS_03/Crealitylogo_PLA_32m41s.gcode
 /usr/share/klipper/scripts/install-octopi.sh
 /usr/share/klipper/test/klippy/sdcard_loop/big.gcode
 /usr/share/klipper/fw/F012/noz0_130_G30-noz0_021_000.bin
@@ -370,6 +371,7 @@
 /usr/share/klipper/klippy/stepper.py
 /usr/share/klipper/test/configs/stm32h723.cfg
 /usr/share/klipper/test/klippy/screws_tilt_adjust.test
+/usr/share/klipper/config/GS_03_CR0CN240319C13/printer_params.cfg
 /usr/share/klippy-env/lib/python3.9/site-packages/setuptools/cli-32.exe
 /usr/share/klippy-env/lib/python3.9/site-packages/setuptools/depends.py
 /etc/init.d/klipper
@@ -471,6 +473,7 @@
 /usr/share/klipper/scripts/motan/motan_graph.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/html5lib/treewalkers/dom.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/packaging/utils.pyc
+/usr/share/klipper/config/GS_03_CR0CN240319C13/sensorless.cfg
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/chardet/euckrprober.pyc
 /usr/share/klipper/gcodes/K1/3DBenchy.gcode
 /usr/share/klipper/scripts/Dockerfile
@@ -489,6 +492,7 @@
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/urllib3/request.pyc
 /usr/share/klipper/klippy/extras/skew_correction.py
 /usr/share/klipper/test/klippy/bltouch.test
+/usr/share/klipper/config/GS_03_CR0CN240319C13/factory_printer.cfg
 /usr/share/klipper/klippy/extras/thermistor.pyc
 /usr/share/klipper/klippy/extras/adc_temperature.py
 /usr/share/klipper/klippy/extras/manual_probe.py
@@ -676,6 +680,7 @@
 /usr/share/klipper/klippy/extras/gcode_button.pyc
 /usr/share/klippy-env/bin/python-config
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/urllib3/util/response.py
+/usr/share/klipper/config/GS_03_CR0CN240319C13/box.cfg
 /usr/share/klipper/config/printer-seemecnc-rostock-max-v2-2015.cfg
 /usr/share/klippy-env/lib/python3.9/site-packages/setuptools/command/install_egg_info.pyc
 /usr/share/klippy-env/lib/python3.9/site-packages/setuptools/command/build_py.py
@@ -977,6 +982,7 @@
 /usr/share/klipper/klippy/extras/fan_feedback.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/chardet/jpcntx.py
 /usr/share/klipper/docs/RPi_microcontroller.md
+/usr/share/klipper/gcodes/GS_03/3DBench_PLA_21m47s.gcode
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/operations/freeze.pyc
 /usr/share/klipper/klippy/extras/probe.pyc
 /usr/share/klippy-env/lib/python3.9/site-packages/wrapt-1.12.1.dist-info/METADATA
@@ -1091,6 +1097,7 @@
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/status_codes.py
 /usr/share/klipper/docs/img/zigzag.svg.png
 /usr/share/klipper/config/K1_MAX_SE_CR4CU220812S12/gcode_macro.cfg
+/usr/share/klipper/gcodes/GS_03/3DBenchy_PLA_34m1s.gcode
 /usr/share/klipper/docs/Endstop_Phase.md
 /usr/share/klipper/docs/img/smoothed.svg
 /usr/share/klipper/klippy/extras/dotstar.py
@@ -1280,6 +1287,7 @@
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/cachecontrol/caches/__init__.py
 /usr/share/klipper/config/K1_MAX_CR0CN240110C10/factory_printer.cfg
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/colorama/initialise.pyc
+/usr/share/klipper/config/GS_03_CR0CN240319C13/gcode_macro.cfg
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/html5lib/constants.py
 /usr/share/klippy-env/lib/python3.9/site-packages/wheel/test/test_tagopt.py
 /usr/share/klipper/docs/Measuring_Resonances.md
@@ -1308,6 +1316,7 @@
 /usr/share/klipper/klippy/kinematics/delta.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/utils.py
 /usr/share/klippy-env/lib/python3.9/site-packages/setuptools/archive_util.py
+/usr/share/klipper/config/GS_03_CR0CN240319C13/printer.cfg
 /usr/share/klipper/klippy/extras/fan_feedback.pyc
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/chardet/jpcntx.pyc
 /usr/share/klipper/config/F008_CR0CN240319C13_1/gcode_macro.cfg

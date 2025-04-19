@@ -489,6 +489,8 @@ class GCodeMove:
             z = state['last_position'][2] + self.variable_safe_z + state["variable_z_safe_pause"]
             logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE self.last_position[2]:%s, state['last_position'][2]:%s, self.variable_safe_z:%s, \
                 state['variable_z_safe_pause']:%s" % (self.last_position[2], state['last_position'][2], self.variable_safe_z, state["variable_z_safe_pause"]))
+            # 获取补偿值，解决断电续打虚层、压层问题
+            offset_value = self.printer.lookup_object('virtual_sdcard').offset_value
             toolhead = self.printer.lookup_object("toolhead")
             if self.config.has_section("z_align"):
                 gcode.run_script_from_command("BED_MESH_CLEAR")
@@ -501,34 +503,32 @@ class GCodeMove:
                 now_pos = toolhead.get_position()
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE after cmd_ZDOWN now_pos:%s"%str(now_pos))
                 adjustments_diff = 0
-                if self.config.has_section("z_tilt"):
-                    try:
-                        z_tilt = self.printer.lookup_object('z_tilt')
-                        adjustments = z_tilt.get_adjustments()
-                        logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE z_tilt.get_adjustments:%s" % str(adjustments))
-                        if adjustments:
-                            negative = False
-                            if abs(adjustments[0]) < abs(adjustments[1]):
-                                if adjustments[1] < 0:
-                                    negative = True
-                            else:
-                                if adjustments[0] < 0:
-                                    negative = True
-                            adjustments_diff = abs(adjustments[0]-adjustments[1])/2
-                            adjustments_diff = adjustments_diff*(-1.0) if negative else adjustments_diff
-                    except Exception as err:
-                        logging.exception("RESTORE z_tilt.get_adjustments err:%s" % err)
-                if adjustments_diff != 0 and abs(adjustments_diff)>4.0:
-                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE adjustments_diff:%s > 3.0" % adjustments_diff)
-                    adjustments_diff =  adjustments_diff/10
-                cur_z = now_pos[2]+adjustments_diff
+#                if self.config.has_section("z_tilt"):
+#                    try:
+#                        z_tilt = self.printer.lookup_object('z_tilt')
+#                        adjustments = z_tilt.get_adjustments()
+#                        logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE z_tilt.get_adjustments:%s" % str(adjustments))
+#                        if adjustments:
+#                            negative = False
+#                            if abs(adjustments[0]) < abs(adjustments[1]):
+#                                if adjustments[1] < 0:
+#                                    negative = True
+#                            else:
+#                                if adjustments[0] < 0:
+#                                    negative = True
+#                            adjustments_diff = abs(adjustments[0]-adjustments[1])/2
+#                            adjustments_diff = adjustments_diff*(-1.0) if negative else adjustments_diff
+#                    except Exception as err:
+#                        logging.exception("RESTORE z_tilt.get_adjustments err:%s" % err)
+#                if adjustments_diff != 0 and abs(adjustments_diff)>4.0:
+#                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE adjustments_diff:%s > 3.0" % adjustments_diff)
+#                    adjustments_diff =  adjustments_diff/10
+                cur_z = now_pos[2]+adjustments_diff + offset_value
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE cur_z:%s adjustments_diff:%s" % (cur_z, adjustments_diff))
                 toolhead.set_position([now_pos[0], now_pos[1], cur_z, self.last_position[3]], homing_axes=(2,))
             else:
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE BED_MESH_PROFILE LOAD='default'")
                 gcode.run_script_from_command('BED_MESH_PROFILE LOAD="default"')
-                # 补偿0.2, 测试验证首层虚层的问题
-                offset_value = self.printer.lookup_object('virtual_sdcard').offset_value
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE toolhead.set_position:%s" % str([x, y, z+offset_value, self.last_position[3]]))
                 toolhead.set_position([x, y, z+offset_value, self.last_position[3]], homing_axes=(2,))
             speed = self.speed
@@ -543,12 +543,19 @@ class GCodeMove:
                     logging.error(err)
                 box_enable = data.get("enable", -1)
                 logging.info("data:%s" % str(data))
+                gcode.run_script_from_command("BOX_POWER_LOSS_RESTORE")
                 if box_enable == 0:
                     logging.info("start box.flush_material")
                     box.flush_material()
                 else:
-                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
-                    gcode.run_script_from_command("G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
+                    if XYZET["T"]:
+                        logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE :%s" % XYZET["T"])
+                        gcode.run_script_from_command("M400")
+                        gcode.run_script_from_command(XYZET["T"])
+                        gcode.run_script_from_command("M400")
+                    else:
+                        logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
+                        gcode.run_script_from_command("G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
             else:
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
                 gcode.run_script_from_command("G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
@@ -607,12 +614,6 @@ class GCodeMove:
                 toolhead.requested_accel_to_decel,
                 toolhead.square_corner_velocity
             ))
-            if XYZET["T"]:
-                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE :%s" % XYZET["T"])
-                gcode.run_script_from_command("M400")
-                gcode.run_script_from_command("BOX_POWER_LOSS_RESTORE")
-                gcode.run_script_from_command(XYZET["T"])
-                gcode.run_script_from_command("M400")
             logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE done")
         except Exception as err:
             logging.exception("cmd_CX_RESTORE_GCODE_STATE err:%s" % err)

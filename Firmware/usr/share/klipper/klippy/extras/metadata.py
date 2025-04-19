@@ -265,6 +265,9 @@ class BaseSlicer(object):
     def parse_flush_para(self) -> Optional[Dict[str, Any]]:
         return None
 
+    def parse_default_filament_colour(self) -> Optional[Tuple[Any, ...]]:
+        return None
+
 class UnknownSlicer(BaseSlicer):
     def check_identity(self, data: str) -> Optional[Dict[str, str]]:
         return {'slicer': "Unknown"}
@@ -1033,12 +1036,21 @@ class Creality(BaseSlicer):
         if not flush_volumes_matrix_match:
             flush_volumes_matrix_match = re.search(r'flush_volumes_matrix\s*=\s*([^;]+)', self.footer_data)
         if flush_volumes_matrix_match:
-            flush_volumes_matrix = [int(x) for x in flush_volumes_matrix_match.group(1).strip().split(',')]
+            flush_volumes_matrix = [int(float(x)) for x in flush_volumes_matrix_match.group(1).strip().split(',')]
         # return
         if flush_multiplier is not None or flush_volumes_matrix is not None:
             return {'flush_multiplier': flush_multiplier, 'flush_volumes_matrix': flush_volumes_matrix}
         else:
             return None
+
+    def parse_default_filament_colour(self) -> Optional[Tuple[Any, ...]]:
+        default_filament_colour = []
+        default_filament_colour_match = re.search(r'default_filament_colour = (\S+)', self.header_data)
+        if not default_filament_colour_match:
+            default_filament_colour_match = re.search(r'default_filament_colour = (\S+)', self.footer_data)
+        if default_filament_colour_match:
+            default_filament_colour = default_filament_colour_match.group(1).split(';')
+        return default_filament_colour
 
 READ_SIZE = 512 * 1024
 SUPPORTED_SLICERS: List[Type[BaseSlicer]] = [
@@ -1062,7 +1074,8 @@ SUPPORTED_DATA = [
     'filament_total',
     'filament_weight_total',
     'flush_para',
-    'model_info']
+    'model_info',
+    'default_filament_colour']
 
 def process_objects(file_path: str, slicer: BaseSlicer, name: str) -> bool:
     try:

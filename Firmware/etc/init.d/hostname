@@ -28,6 +28,9 @@ set_hostname_with_model_mac()
             "F008")
                 model="K2Plus"
                 ;;
+            "GS-03")
+                model="GS03"
+                ;;
             "F012")
                 model="F012"
                 ;;

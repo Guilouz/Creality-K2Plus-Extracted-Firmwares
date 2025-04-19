@@ -77,7 +77,7 @@ class VirtualSD:
                 self._handle_ready)
         # sdcard state
         sd = config.get('path')
-        self.offset_value = config.getfloat('offset_value', 0.2) # 断电续打偏移补偿值
+        self.offset_value = config.getfloat('offset_value', 0) # 断电续打偏移补偿值
         self.forced_leveling = config.getboolean('forced_leveling',  default=False)
         self.sdcard_dirname = os.path.normpath(os.path.expanduser(sd))
         self.current_file = None
