@@ -462,7 +462,7 @@ Installed-Time: 1741167646
 Auto-Installed: yes
 
 Package: base-files
-Version: 4-r0-0763e429f
+Version: 4-r0-e12ba1b67
 Depends: libc, librt, libpthread, netifd, procd, jsonfilter, fstools, fwtool
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -1612,7 +1612,7 @@ Installed-Time: 1741167646
 
 Package: libcurl4
 ABIVersion: 4
-Version: 7.82.0-1
+Version: 7.82.0-2
 Depends: libc, librt, libpthread, libopenssl1.1, libnghttp2-14, ca-bundle
 Provides: libcurl
 Status: install user installed
@@ -1817,7 +1817,7 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1741167646
 
 Package: lvgl_klipper
-Version: 51e44e18e
+Version: e3dc7eb11
 Depends: libc, librt, libpthread, libcrlog, aliyun-oss-cpp-sdk, libapr, libaprutil, libatomic1, libffmpeg-full, libblobmsg-json20210516, libopenssl1.1, libcurl4, libfreetype, libhv, libinotifytools, libjpeg, libjson-c5, jsoncpp, mxml, libpng, paho-mqtt-c, libprotobuf-c, libqrencode, libstdcpp6, libubox20210516, libubus20210630, libuuid1, wifimanager-v2.0-lib, libcxcloud
 Status: install user installed
 Architecture: arm_cortex-a7_neon

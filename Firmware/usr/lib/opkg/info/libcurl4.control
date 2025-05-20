@@ -1,5 +1,5 @@
 Package: libcurl4
-Version: 7.82.0-1
+Version: 7.82.0-2
 Depends: libc, librt, libpthread, libopenssl1.1, libnghttp2-14, ca-bundle
 Provides: libcurl
 Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/net/curl
@@ -7,10 +7,10 @@ SourceName: libcurl
 License: MIT
 LicenseFiles: COPYING
 Section: libs
-SourceDateEpoch: 1688356042
+SourceDateEpoch: 1744803118
 ABIVersion: 4
 CPE-ID: cpe:/a:haxx:libcurl
 Maintainer: Stan Grishin <stangri@melmac.ca>
 Architecture: arm_cortex-a7_neon
-Installed-Size: 154493
+Installed-Size: 154491
 Description:  A client-side URL transfer library
