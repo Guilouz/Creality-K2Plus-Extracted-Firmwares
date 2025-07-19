@@ -288,11 +288,9 @@ auto_update()
 
                 if [ "$model" = "CR-K1" -o "$model" = "CR-K1 Max" ]; then
                     fw_dir=K1
-                elif [ "$model" = "F008" ]; then
-                    fw_dir=F008
-                    skip_bed0=true
-                    need_extruder=true
-                elif [ "$model" = "GS-03" ]; then
+                elif [ "$model" = "F008" -o \
+                        "$model" = "GS-03" -o \
+                        "$model" = "F028" ]; then
                     fw_dir=F008
                     skip_bed0=true
                     need_extruder=true

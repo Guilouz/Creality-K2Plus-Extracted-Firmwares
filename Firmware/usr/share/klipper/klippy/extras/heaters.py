@@ -84,14 +84,14 @@ class Heater:
         if self.config.has_section('fan_feedback'):
             fan_feedback = self.printer.lookup_object('fan_feedback')
             if self.control.heating and self.last_pwm_value > 0 and self.target_temp and fan_feedback.cx_fan_status.get("fan0_speed", 0) == 0:
-                for _ in range(12):
+                for _ in range(15):
                     # 判断连续12s内风扇是否都是处于停止状态
                     self.printer.get_reactor().pause(self.printer.get_reactor().monotonic() + 1.0)
                     if self.control.heating and self.last_pwm_value > 0 and self.target_temp and fan_feedback.cx_fan_status.get("fan0_speed", 0) == 0:
                         num += 1
                     else:
                         break
-                if num == 12:
+                if num == 15:
                     self.stop_heating = True
                     ptc_fan_last_speed = -1
                     if self.config.has_section("heater_fan chamber_fan"):
@@ -549,6 +549,9 @@ class PrinterHeaters:
     def turn_off_all_heaters(self, print_time=0.):
         for heater in self.heaters.values():
             heater.set_temp(0.)
+            # now = self.printer.get_reactor().monotonic()
+            # heater.set_pwm(now, 0.0)
+            # self.target_temp = 0.0
 
     cmd_TURN_OFF_HEATERS_help = "Turn off all heaters"
     def cmd_TURN_OFF_HEATERS(self, gcmd):

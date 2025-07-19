@@ -5,7 +5,7 @@ class FanFeedback:
     def __init__(self, config):
         self.printer = config.get_printer()
 
-        self.print_delay_time = config.getfloat('print_delay_time', 5.)
+        self.print_delay_time = config.getfloat('print_delay_time', 3.)
         self.current_delay_time = config.getfloat('current_delay_time', 2.)
 
         ppins = self.printer.lookup_object('pins')

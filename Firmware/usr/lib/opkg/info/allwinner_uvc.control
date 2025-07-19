@@ -1,10 +1,10 @@
 Package: allwinner_uvc
-Version: ac4b23d
+Version: 2cae271
 Depends: libc, librt, libpthread, libcrlog, libopenssl1.1, libshm, webrtc, libuapi, libcedarx, ncnn_yolov5
 Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/cam_app
 SourceName: allwinner_uvc
 Section: creality
 SourceDateEpoch: 1742970082
 Architecture: arm_cortex-a7_neon
-Installed-Size: 326001
+Installed-Size: 332811
 Description:  allwinner_uvc

@@ -366,11 +366,9 @@ class GCodeDispatch:
                 v_sd.cur_print_data = {}
         except Exception as err:
             logging.error(err)
-        try:
-            if "key" in msg and re.findall('key(\d+)', msg):
-                reportInformation(msg)
-        except Exception as err:
-            logging.error(err)
+            
+        # TODO: klipper端上报key***冗余代码待清理及优化逻辑，目前只删除上报逻辑，保留特殊key601/602/603/608/701/
+
         logging.warning(msg)
         lines = msg.strip().split('\n')
         if len(lines) > 1:

@@ -5,9 +5,9 @@ Source: package/network/services/hostapd
 SourceName: hostapd-common
 License: BSD-3-Clause
 Section: net
-SourceDateEpoch: 1688356042
+SourceDateEpoch: 1750325216
 CPE-ID: cpe:/a:w1.fi:hostapd
 Maintainer: Felix Fietkau <nbd@nbd.name>
 Architecture: arm_cortex-a7_neon
-Installed-Size: 11188
+Installed-Size: 11203
 Description:  hostapd/wpa_supplicant common support files

@@ -165,11 +165,11 @@ Concat                   Concat_200               2 1 318 321 322
 Convolution              Conv_201                 1 1 322 323 0=256 1=1 5=1 6=65536 8=2
 Swish                    Mul_203                  1 1 323 325
 Convolution              Conv_204                 1 1 285_splitncnn_0 326 0=21 1=1 5=1 6=1344 8=2
-Reshape                  Reshape_216              1 1 326 338 0=-1 1=7 2=3
-Permute                  Transpose_217            1 1 338 output 0=1
-Convolution              Conv_218                 1 1 305_splitncnn_0 340 0=21 1=1 5=1 6=2688 8=2
-Reshape                  Reshape_230              1 1 340 352 0=-1 1=7 2=3
-Permute                  Transpose_231            1 1 352 353 0=1
-Convolution              Conv_232                 1 1 325 354 0=21 1=1 5=1 6=5376 8=2
-Reshape                  Reshape_244              1 1 354 366 0=-1 1=7 2=3
-Permute                  Transpose_245            1 1 366 367 0=1
+Reshape                  Reshape_222              1 1 326 344 0=-1 1=7 2=3
+Permute                  Transpose_223            1 1 344 output 0=1
+Convolution              Conv_224                 1 1 305_splitncnn_0 346 0=21 1=1 5=1 6=2688 8=2
+Reshape                  Reshape_242              1 1 346 364 0=-1 1=7 2=3
+Permute                  Transpose_243            1 1 364 365 0=1
+Convolution              Conv_244                 1 1 325 366 0=21 1=1 5=1 6=5376 8=2
+Reshape                  Reshape_262              1 1 366 384 0=-1 1=7 2=3
+Permute                  Transpose_263            1 1 384 385 0=1

@@ -31,6 +31,9 @@ set_hostname_with_model_mac()
             "GS-03")
                 model="GS03"
                 ;;
+            "F028")
+                model="M350"
+                ;;
             "F012")
                 model="F012"
                 ;;

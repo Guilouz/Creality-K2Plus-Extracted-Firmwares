@@ -1480,6 +1480,7 @@
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/models/__init__.py
 /usr/share/klippy-env/lib/python3.9/site-packages/pkg_resources/__init__.py
 /usr/share/klippy-env/lib/python3.9/site-packages/wheel/test/test_ranking.py
+/usr/bin/klipper_watcher.sh
 /usr/share/klippy-env/lib/python3.9/genericpath.pyc
 /usr/share/klippy-env/lib/python3.9/site-packages/pip/_vendor/requests/packages/chardet/escprober.pyc
 /usr/share/klipper/klippy/parsedump.py

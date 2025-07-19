@@ -655,10 +655,10 @@ class MCU:
                     msg += " heater_bed_temp:%s" % round(heater_bed_obj.heater.smoothed_temp, 2)
                     code_key_string = "key516"
                 if code_key_string and not self._serial.adc_out_of_range_info["bed0_isReport"]:
-                    self._serial.adc_out_of_range_info["bed0_isReport"] = True
+                    # self._serial.adc_out_of_range_info["bed0_isReport"] = True
+                    gcode.run_script("TURN_OFF_HEATERS")
                     gcode._respond_error("""{"code": "%s", "msg":"bed %s", "values": []}""" % (code_key_string, self._name + " " + msg))
                 code_key_string = ""
-
                 if chamber_temp_obj and chamber_temp_obj.last_temp < 0:
                     msg += " chamber_temp:%s" % round(chamber_temp_obj.last_temp, 2)
                     code_key_string = "key511"
@@ -672,7 +672,8 @@ class MCU:
                     msg += " mcu_temp:%s" % round(mcu_temp_obj.last_temp, 2)
                     code_key_string = "key518"
                 if code_key_string and not self._serial.adc_out_of_range_info["mcu0_isReport"]:
-                    self._serial.adc_out_of_range_info["mcu0_isReport"] = True
+                    # self._serial.adc_out_of_range_info["mcu0_isReport"] = True
+                    gcode.run_script("TURN_OFF_HEATERS")
                     gcode._respond_error("""{"code": "%s", "msg":"mcu %s", "values": []}""" % (code_key_string, self._name + " " + msg))
                 code_key_string = ""
 
@@ -684,7 +685,8 @@ class MCU:
                     msg += " extruder_temp:%s" % round(extruder_obj.heater.smoothed_temp, 2)
                     code_key_string = "key515"
                 if code_key_string and not self._serial.adc_out_of_range_info["noz0_isReport"]:
-                    self._serial.adc_out_of_range_info["noz0_isReport"] = True
+                    # self._serial.adc_out_of_range_info["noz0_isReport"] = True
+                    gcode.run_script("TURN_OFF_HEATERS")
                     gcode._respond_error("""{"code": "%s", "msg":"nozzle %s", "values": []}""" % (code_key_string, self._name + " " + msg))
                 code_key_string = ""
 

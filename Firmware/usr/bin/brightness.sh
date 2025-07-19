@@ -45,9 +45,11 @@ elif [ $# -eq 0 ]; then
     elif [ $cur_pwm -eq $MAX_BRIGHTNESS ]; then
         cur_level=100
     elif [ $cur_pwm -le $DARK_BRIGHTNESS ]; then
-        cur_level=1
+        cur_level=10
     else
-        cur_level=$(( $cur_pwm * 100 / $MAX_BRIGHTNESS ))
+        #cur_level=$(( $cur_pwm * 100 / $MAX_BRIGHTNESS ))
+        float_level=$(awk -v cur_pwm="$cur_pwm" -v max_bri="$MAX_BRIGHTNESS" 'BEGIN{print cur_pwm * 100 / max_bri}')
+        cur_level=$(awk -v val=$float_level 'BEGIN{printf "%.0f", val}')
     fi
 
     echo "$cur_level"
