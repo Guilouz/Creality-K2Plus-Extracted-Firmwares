@@ -299,8 +299,8 @@ class LoadAI:
             self.gcode.run_script_from_command("G1 X-7")
             self.toolhead.wait_moves() # M400
             self.gcode.run_script_from_command("G90")
-            self.gcode.run_script_from_command("BOX_NOZZLE_CLEAN")  # 擦嘴
-            self.box_action.move_to_safe_pos()  # 去安全位置 BOX_MOVE_TO_SAFE_POS
+            # self.gcode.run_script_from_command("BOX_NOZZLE_CLEAN")  # 擦嘴
+            # self.box_action.move_to_safe_pos()  # 去安全位置 BOX_MOVE_TO_SAFE_POS
 
         logging.info(f"execute_toolhead_ai_waste_management end!!!")
 

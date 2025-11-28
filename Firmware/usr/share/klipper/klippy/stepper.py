@@ -329,7 +329,8 @@ class PrinterRail:
         else:
             self.position_min = 0.
             self.position_max = self.position_endstop
-        self.set_stepper_x_position_min(self.config)
+        if self.config.get_printer().lookup_object('box', None):
+            self.set_stepper_x_position_min(self.config)
         if (self.position_endstop < self.position_min
             or self.position_endstop > self.position_max) and config.get_name() != "stepper_x":
             raise config.error(
@@ -371,7 +372,8 @@ class PrinterRail:
         except Exception as err:
             logging.exception(err)
     def get_range(self):
-        self.set_stepper_x_position_min(self.config)
+        if self.config.get_printer().lookup_object('box', None):
+            self.set_stepper_x_position_min(self.config)
         return self.position_min, self.position_max
     def get_homing_info(self):
         homing_info = collections.namedtuple('homing_info', [

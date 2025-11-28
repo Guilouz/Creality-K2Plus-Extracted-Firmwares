@@ -3,8 +3,7 @@
 # Copyright (C) 2018  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import os, logging, io, json, time, re, threading
-from .tool import reportInformation
+import os, logging, io, json, time, re, threading, copy
 from .base_info import base_dir, system_info_instance
 
 VALID_GCODE_EXTS = ['gcode', 'g', 'gco']
@@ -127,6 +126,10 @@ class VirtualSD:
         self.layer = 0
         self.layer_count = 0
         self.is_continue_print = False
+        self.restore_err = False
+        self.restore_print_timer = None
+        self.print_info = None
+        self.XYZET = None
         self.slow_print = False
         self.slow_count = 0
         self.speed_factor = 1.0/60.0
@@ -142,6 +145,7 @@ class VirtualSD:
         self.layer_key = ""
         self.lock = threading.Lock()
         self.is_move_out_of_range_in_printing = False
+        self.ignore_M = False
     def _handle_ready(self):
         self._maintenance_item_timer = self.reactor.register_timer(self.update_maintenance_item_timer)
         self.reactor.update_timer(self._maintenance_item_timer, self.reactor.NOW)
@@ -421,7 +425,7 @@ class VirtualSD:
                 logging.exception("virtual_sdcard get_file_list")
                 raise self.gcode.error("Unable to get file list")
     def get_status(self, eventtime):
-        return {
+        res = copy.deepcopy({
             'file_path': self.file_path(),
             'progress': self.progress(),
             'is_active': self.is_active(),
@@ -431,8 +435,10 @@ class VirtualSD:
             'layer': self.layer,
             'layer_count': self.layer_count,
             'run_dis': self.run_dis,
-            'bed_mesh_calibate_state': self.bed_mesh_calibate_state
-        }
+            'bed_mesh_calibate_state': self.bed_mesh_calibate_state,
+            'cur_print_data': self.cur_print_data.get("jobs", [])[0] if self.cur_print_data.get("jobs", []) else {}
+        })
+        return res
     def file_path(self):
         if self.current_file:
             return self.current_file.name
@@ -474,6 +480,7 @@ class VirtualSD:
             self.print_stats.note_cancel()
         self.is_cancel = False
         self.file_position = self.file_size = 0.
+        self.ignore_M = False
 
     def cmd_CLEAR_EEPROM_INFO(self, gcmd):
         from subprocess import call
@@ -495,10 +502,6 @@ class VirtualSD:
         except Exception as err:
             logging.error(err)
         self.update_print_history_info(only_update_status=True, state="cancelled")
-        if self.print_id and self.cur_print_data:
-            reportInformation("key701", data=self.cur_print_data)
-            self.print_id = ""
-            self.cur_print_data = {}
 
     # G-Code commands
     def cmd_error(self, gcmd):
@@ -535,7 +538,8 @@ class VirtualSD:
         self._reset_file()
         filename = gcmd.get("FILENAME")
         self.is_continue_print = gcmd.get("ISCONTINUEPRINT", False)
-        self.printer.lookup_object("box").box_state.is_continue_print = gcmd.get("ISCONTINUEPRINT", False)
+        if self.printer.lookup_object("box", None):
+            self.printer.lookup_object("box").box_state.is_continue_print = gcmd.get("ISCONTINUEPRINT", False)
         self.rm_power_loss_info()
         first_floor = gcmd.get("FIRST_FLOOR_PRINT", None)
         if first_floor is None or first_floor == False:
@@ -681,7 +685,8 @@ class VirtualSD:
             f.seek(0)
         except:
             logging.exception("virtual_sdcard file open")
-            raise gcmd.error("""{"code":"key121", "msg": "Unable to open file", "values": []}""")
+            # raise gcmd.error("""{"code":"key121", "msg": "Unable to open file", "values": []}""")
+            return gcmd.warning("""{"code":"key121", "msg": "Unable to open file", "values": []}""")
         gcmd.respond_raw("File opened:%s Size:%d" % (filename, fsize))
         gcmd.respond_raw("File selected")
         self.current_file = f
@@ -754,9 +759,9 @@ class VirtualSD:
                 if len(value_G)<=1:
                     continue
                 value_T = re.findall(pattern_T, header_data)
-                if len(value_T) == 1:
+                if len(value_T) == 1 and result == 0:
                     result = 1
-                elif len(value_T) > 1:
+                elif len(value_T) > 1 and result >= 0:
                     result = 2
                 break
         return result
@@ -765,6 +770,8 @@ class VirtualSD:
         # Tn能拿到值的话 证明是多色文件 需要遍历到T值再退出循环
         Tn = self.check_Tn(file_path)
         result = {"X": 0, "Y": 0, "Z": 0, "E": 0, "T": ""}
+        if self.gcode_metadata["metadata"]["model_info"]["multicolor_method"] == 1:
+            result["M"] = ""
         try:
             import io
             with io.open(file_path, "r", encoding="utf-8") as f:
@@ -800,14 +807,12 @@ class VirtualSD:
                     if result["X"] and result["Y"] and result["Z"] and result["E"]:
                         break
                     self.reactor.pause(self.reactor.monotonic() + .001)
-            if Tn == 1:
-                result["T"] = "T0"
-                logging.info("power_loss get XYZET T:%s" % str(result))
-            elif Tn == 2:
+            if Tn >= 1:
                 # 获取file_postion的位置的上一个Tn值
                 READ_SIZE = 512*1024
                 pattern = r"(?m)^\s*T(\d+)\s*$"
-                with io.open(file_path, "r", encoding="utf-8") as f:
+                pattern_M = r"(?m)^\s*M8200\s*L\s*I(\d+)\s*$"
+                with io.open(file_path, "r", encoding="utf-8", errors='ignore') as f:
                     while file_position > 0:
                         pos = max(file_position - READ_SIZE, 0)
                         read_size = min(READ_SIZE, file_position)
@@ -817,13 +822,23 @@ class VirtualSD:
                         if values:
                             result["T"] = "T%s"%values[-1]
                             logging.info("power_loss get XYZET T:%s" % str(result))
+                        if self.gcode_metadata["metadata"]["model_info"]["multicolor_method"] == 1 and result["M"] == "":
+                            values_M = re.findall(pattern_M, header_data)
+                            if values_M:
+                                result["M"] = "T%s"%values_M[-1]
+                                logging.info("power_loss get XYZET M:%s" % str(result["M"]))
+                        if result["T"] and \
+                            (self.gcode_metadata["metadata"]["model_info"]["multicolor_method"] == 0 or result["M"]):
                             break
                         file_position = pos
                         if pos == 0:
                             logging.info("read the file without finding a match")
                             break
                         self.reactor.pause(self.reactor.monotonic() + .001)
-            logging.info("power_loss get XYZET:%s" % str(result))
+            else:
+                result["T"] = "T0"
+                logging.info("power_loss get XYZET T:%s" % str(result))
+            logging.info("power_loss get Tn: %s, get XYZET:%s" % (Tn, str(result)))
         except UnicodeDecodeError as err:
             logging.exception(err)
             # UnicodeDecodeError 'utf-8' codec can't decode byte 0xff in postion 5278: invalid start byte
@@ -980,13 +995,12 @@ class VirtualSD:
             logging.error(err)
         return delay_photography_switch, location, frame, interval, power_loss_switch
 
-    def restore_print(self, gcode_move, power_loss_switch, bl24c16f, eepromState):
-        sameFileName = False
+    def check_same_file_name(self, power_loss_switch, bl24c16f):
         if self.is_continue_print and os.path.exists(self.print_file_name_path):
             with open(self.print_file_name_path, "r") as f:
                 result = (json.loads(f.read()))
                 if result.get("file_path", "") == self.current_file.name:
-                    sameFileName = True
+                    return True
                 else:
                     # clear power_loss info
                     os.remove(self.print_file_name_path)
@@ -994,13 +1008,43 @@ class VirtualSD:
                         os.remove(self.gcode.exclude_object_info)
                     if power_loss_switch and bl24c16f:
                         bl24c16f.setEepromDisable()
-        if power_loss_switch and self.is_continue_print and not self.do_resume_status and sameFileName and bl24c16f:
+        return False
+
+    def restore_print(self, eventtime):
+        self.reactor.unregister_timer(self.restore_print_timer)
+        logging.info("hys: print_info: %s, XYZET: %s" % (self.print_info, self.XYZET))
+        gcode_move = self.printer.lookup_object('gcode_move', None)
+        gcode_move.cmd_CX_RESTORE_GCODE_STATE(self.print_info, self.print_file_name_path, self.XYZET)
+        if self.must_pause_work is True:
+            logging.info("hys: power_loss end do_resume false")
+            self.restore_err = True
+            self.restore_print_timer = None
+            return self.reactor.NEVER
+        logging.info("hys: power_loss end do_resume success")
+        self.restore_err = False
+        self.print_stats.power_loss = 0
+        # 此处为设置慢速打印, 多色打印时不设置慢速打印
+        if self.layer > 1 and self.XYZET.get("T") == "":
+            self.slow_print = True
+            self.slow_count = self.layer + 1
+            self.speed_factor = gcode_move.speed_factor
+            self.gcode.run_script_from_command("M220 S20")
+            logging.info("power_loss slow_print M220 S20 SET")
+        self.gcode.run_script_from_command("SET_PIN PIN=extruder_fan VALUE=1")
+        self.is_continue_print = False
+        self.restore_print_timer = None
+        return self.reactor.NEVER
+
+    def get_restore_info(self, power_loss_switch, bl24c16f, eepromState):
+        print_info = None
+        XYZET = None
+        if power_loss_switch and self.is_continue_print and not self.do_resume_status and \
+            self.check_same_file_name(power_loss_switch, bl24c16f) and bl24c16f:
             eepromState = bl24c16f.checkEepromFirstEnable() if power_loss_switch and bl24c16f else True
             if not eepromState:
                 with self.gcode.mutex:
                     try:
                         self.print_stats.note_start(info_path=self.print_file_name_path)
-                        self.is_continue_print = False
                         logging.info("power_loss start do_resume...")
                         logging.info("power_loss start print, filename:%s" % self.current_file.name)
                         pos = bl24c16f.eepromReadHeader()
@@ -1039,17 +1083,6 @@ class VirtualSD:
                             error_message = "power_loss gcode Z == 0, stop print"
                             self.print_stats.note_error(error_message)
                             raise
-                        gcode_move.cmd_CX_RESTORE_GCODE_STATE(print_info, self.print_file_name_path, XYZET)
-                        logging.info("power_loss end do_resume success")
-                        self.print_stats.power_loss = 0
-                        # 此处为设置慢速打印, 多色打印时不设置慢速打印
-                        if self.layer > 1 and XYZET.get("T") == "":
-                            self.slow_print = True
-                            self.slow_count = self.layer + 1
-                            self.speed_factor = gcode_move.speed_factor
-                            self.gcode.run_script_from_command("M220 S20")
-                            logging.info("power_loss slow_print M220 S20 SET")
-                        self.gcode.run_script_from_command("SET_PIN PIN=extruder_fan VALUE=1")
                     except Exception as err:
                         self.print_stats.power_loss = 0
                         logging.error(err)
@@ -1057,7 +1090,7 @@ class VirtualSD:
                 self.gcode.run_script("G90")
         else:
             self.gcode.run_script("G90")
-        return eepromState
+        return eepromState, print_info, XYZET
 
     def record_power_loss_info(self,power_loss_switch, bl24c16f,eepromState, gcode_move, start_time, end_time, interval_start_time, interval_end_time):
         try:
@@ -1069,6 +1102,10 @@ class VirtualSD:
             elif self.layer == 0 and gcode_move.last_position[2] > 1.0:
                 if end_time-start_time>5:
                     state = True
+            if state == True and self.printer.lookup_object("box", None) and \
+                self.printer.lookup_object("box").box_state.need_update_power_loss_info == False:
+                state = False
+                # logging.info("hys: do not update power loss info")
             # if power_loss_switch and bl24c16f and (self.layer > 2 or (self.count_G1 > 18 and gcode_move.last_position[2] > 0.6)) and end_time-start_time>5 and self.file_position>0:
             if power_loss_switch and bl24c16f and (self.layer > 6 or (self.count_G1 > 18 and gcode_move.last_position[2] > 1.0)) and state and self.file_position>0:
                 logging.info("record_power_loss_info to eeprom layer:%s last_position[2]:%s" % (self.layer, gcode_move.last_position[2]))
@@ -1124,8 +1161,6 @@ class VirtualSD:
                 self.fan_state["M106 P2"] = M106_line
         elif line.startswith("END_PRINT"):
             self.end_print_state = True
-            if self.print_id and os.path.exists("/tmp/camera_main"):
-                reportInformation("key608", data={"print_id": self.print_id})
             if os.path.exists(self.print_file_name_path):
                 os.remove(self.print_file_name_path)
             if os.path.exists(self.gcode.exclude_object_info):
@@ -1173,6 +1208,34 @@ class VirtualSD:
             capture(end_print=True, frame=frame)
             self.reactor.pause(self.reactor.monotonic() + 1.2)
 
+    def ignore_t_code(self, line):
+        # logging.info(f'multicolor_method: {self.gcode_metadata["metadata"]["model_info"]["multicolor_method"]}')
+        stripped = line.lstrip()
+        if self.gcode_metadata["metadata"]["model_info"]["multicolor_method"] and bool(re.match(r"^T\d", stripped, re.IGNORECASE)):
+            logging.info(f"T ignore code: {line}")
+            return True
+        else: False
+
+    def ignore_M8200_code(self, line, ignore):
+        stripped = line.lstrip()
+        # logging.info("hys: stripped: %s" % stripped)
+        if ignore:
+            # 过滤M8200 P到M8200 O
+            if bool(re.match(r"^M8200\s*O\s*", stripped, re.IGNORECASE)):
+                logging.info("hys: catpure M8200 O, end ignore line[%s]" % line)
+                ignore = False
+            # logging.info("hys: ignore line")
+            return True, ignore
+        # M8200 gcode 文件，外挂料架打印
+        if self.gcode_metadata["metadata"]["model_info"]["multicolor_method"] and \
+            self.printer.lookup_object('box', None) and self.printer.lookup_object('box').box_action.box_state.Tn_data["enable"] == 0 and \
+            bool(re.match(r"^M8200\s*P\s*", stripped, re.IGNORECASE)):
+            ignore=True
+            logging.info("hys: catpure M8200 P, start ignore line[%s]" % line)
+            return True, ignore
+        else:
+            return False, ignore
+
     # Background work timer
     def work_handler(self, eventtime):
         logging.info("work_handler start print, filename:%s" % self.current_file.name)
@@ -1185,13 +1248,14 @@ class VirtualSD:
         bl24c16f = self.printer.lookup_object('bl24c16f') if "bl24c16f" in self.printer.objects and power_loss_switch else None
         eepromState = True
         try:
-            # 断电续打恢复
-            eepromState = self.restore_print(gcode_move, power_loss_switch, bl24c16f, eepromState)
+            # 获取断电续打恢复信息
+            if self.restore_err is False:
+                eepromState, self.print_info, self.XYZET = self.get_restore_info(power_loss_switch, bl24c16f, eepromState)
         except Exception as err:
             self.print_stats.power_loss = 0
             logging.exception("work_handler RESTORE_GCODE_STATE error: %s" % err)
         # 记录打印的文件名
-        if power_loss_switch and bl24c16f and self.current_file:
+        if power_loss_switch and bl24c16f and self.current_file and self.is_continue_print is False:
             gcode_move.recordPrintFileName(self.print_file_name_path, self.current_file.name)
         logging.info("Starting SD card print (position %d)", self.file_position)
         self.reactor.unregister_timer(self.work_timer)
@@ -1228,16 +1292,20 @@ class VirtualSD:
         start_time = interval_start_time = self.reactor.monotonic()
         self.last_layer = self.layer
         while not self.must_pause_work:
+            if self.is_continue_print and not self.restore_print_timer:
+                # 断电续打恢复
+                self.restore_print_timer = self.reactor.register_timer(self.restore_print, self.reactor.NOW)
+            if self.restore_print_timer:
+                self.reactor.pause(self.reactor.monotonic() + 0.5)
+                continue
             if not lines:
                 # Read more data
                 try:
                     data = self.current_file.read(8192)
                 except UnicodeDecodeError as err:
                     logging.exception(err)
-                    err_msg = '{"code": "key571", "msg": "File UnicodeDecodeError"}'
-                    self.gcode._respond_error(err_msg)
+                    self.gcode._respond_error('{"code": "key571", "msg": "File UnicodeDecodeError"}')
                     self.gcode.run_script("CANCEL_PRINT")
-                    break
                 except:
                     logging.exception("virtual_sdcard read")
                     break
@@ -1260,12 +1328,7 @@ class VirtualSD:
                     self.layer_count = 0
                     self.fan_state = {}
                     self.update_print_history_info(only_update_status=True, state="completed")
-                    if self.print_id and not self.end_print_state and os.path.exists("/tmp/camera_main"):
-                        reportInformation("key608", data={"print_id": self.print_id})
                     self.reactor.pause(self.reactor.monotonic() + 0.3)
-                    reportInformation("key701", data=self.cur_print_data)
-                    self.cur_print_data = {}
-                    self.print_id = ""
                     break
                 lines = data.split('\n')
                 lines[0] = partial_input + lines[0]
@@ -1284,6 +1347,9 @@ class VirtualSD:
             next_file_position = self.file_position + len(line.encode('utf-8')) + 1
             self.next_file_position = next_file_position
             end_time = interval_end_time = self.reactor.monotonic()
+            ret, self.ignore_M = self.ignore_M8200_code(line, self.ignore_M)
+            if ret:
+                continue
             # 更新当前打印信息,已打印时间、剩余时间等, 断电续打开关开启的情况下才进行下面的判断
             if power_loss_switch and self.count_line % 4999 == 0:
                 self.update_print_history_info()
@@ -1302,6 +1368,7 @@ class VirtualSD:
                     self.resume_print_speed()
                 # 在读到END_PRINT的时候 判断是否需要拍照
                 self.check_end_print(line, power_loss_switch, delay_photography_switch, frame)
+                if self.ignore_t_code(line): continue
                 if self.is_move_out_of_range_in_printing and pause_resume.pause_start == False:
                     self.is_move_out_of_range_in_printing = False
                     self.gcode.run_script_from_command("PAUSE")

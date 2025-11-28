@@ -180,6 +180,8 @@ class ClientConnection:
         self.server = server
         self.uid = id(self)
         self.sock = sock
+        self.client_info = None
+        self.is_shutdown = True
         self.fd_handle = self.reactor.register_fd(
             self.sock.fileno(), self.process_received, self._do_send)
         self.partial_data = self.send_buffer = b""
@@ -187,6 +189,14 @@ class ClientConnection:
         self.blocking_count = 0
         self.set_client_info("?", "New connection")
         self.request_log = collections.deque([], REQUEST_LOG_SIZE)
+        self.printer.register_event_handler("klippy:shutdown", self._handle_shutdown)
+        self.printer.register_event_handler('klippy:ready', self._handle_ready)
+
+    def _handle_shutdown(self):
+        self.is_shutdown = True
+
+    def _handle_ready(self):
+        self.is_shutdown = False
 
     def dump_request_log(self):
         out = []
@@ -200,6 +210,7 @@ class ClientConnection:
         if state_msg is None:
             state_msg = "Client info %s" % (repr(client_info),)
         logging.info("webhooks client %s: %s", self.uid, state_msg)
+        self.client_info = state_msg
         log_id = "webhooks %s" % (self.uid,)
         if client_info is None:
             self.printer.set_rollover_info(log_id, None, log=False)
@@ -251,6 +262,8 @@ class ClientConnection:
                 logging.exception("webhooks: Error decoding Server Request %s"
                                   % (req))
                 continue
+            if not self.is_shutdown:
+                logging.info("webhooks client %s: %s", self.uid, self.client_info)
             self.reactor.register_callback(
                 lambda e, s=self, wr=web_request: s._process_request(wr))
 
@@ -269,7 +282,7 @@ class ClientConnection:
         result = web_request.finish()
         if result is None:
             return
-        self.send(result)
+        self.send(result)  # TODO: 暂未对api分级处理，依旧沿用error逻辑，master/app由display屏蔽webrequest异常上报
 
     def send(self, data):
         jmsg = json.dumps(data, separators=(',', ':'))
@@ -479,6 +492,26 @@ class QueryStatusHelper:
         objects = [n for n, o in self.printer.lookup_objects()
                    if hasattr(o, 'get_status')]
         web_request.send({'objects': objects})
+    def _deep_compare(self, old_val, new_val):
+        """比较不可变类型"""
+        if type(old_val) != type(new_val):
+            return False
+        if isinstance(new_val, dict):
+            if set(old_val.keys()) != set(new_val.keys()):
+                return False
+            for key in new_val.keys():
+                if not self._deep_compare(old_val.get(key), new_val.get(key)):
+                    return False
+            return True
+        elif isinstance(new_val, (list, tuple)):
+            if len(old_val) != len(new_val):
+                return False
+            for i in range(len(new_val)):
+                if not self._deep_compare(old_val[i], new_val[i]):
+                    return False
+            return True
+        else:
+            return old_val == new_val
     def _do_query(self, eventtime):
         last_query = self.last_query
         query = self.last_query = {}
@@ -509,7 +542,9 @@ class QueryStatusHelper:
                 cres = {}
                 for ri in req_items:
                     rd = res.get(ri, None)
-                    if is_query or rd != lres.get(ri):
+                    # if is_query or rd != lres.get(ri):
+                    #     cres[ri] = rd
+                    if is_query or not self._deep_compare(lres.get(ri), rd):
                         cres[ri] = rd
                 if cres or is_query:
                     cquery[obj_name] = cres

@@ -46,6 +46,7 @@ Printer is shutdown
 class Printer:
     config_error = configfile.error
     command_error = gcode.CommandError
+    command_warning = gcode.CommandWarning.warn
     def __init__(self, main_reactor, bglogger, start_args):
         self.bglogger = bglogger
         self.start_args = start_args

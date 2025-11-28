@@ -16,6 +16,7 @@ zd_up: 0  # 步进电机远离限位开关的电平
 zes_untrig: 1  # 限位开关未触发时的电平
 """
 
+MOTOR_ZDOWN_TIMEOUT = -10000
 MOTOR_PROTECT_ERROR = -10001
 
 class CommandError(Exception):
@@ -53,15 +54,33 @@ class Zalign:
         self.z_align_force_stop = None
         self.force_stop_flag = False
         self.is_already_zodwn = False
+        self.endstop_pin_status = []
         webhooks = self.printer.lookup_object('webhooks')
         webhooks.register_endpoint("zdown_force_stop", self.zdown_force_stop)
         self.real_zmax_path = os.path.join(base_dir, "creality/userdata/config/real_zmax.json")
+        buttons = self.printer.load_object(config, 'buttons')
+        buttons.register_buttons(self.endstop_pin_z, self._button_handler)
+        self.pin_len = min(len(self.endstop_pin_z), 8)
+        
+    def get_switch_states(self, state):
+        return [1 if (state & (1 << i)) == 0 else 0 for i in range(self.pin_len)]
+    def _button_handler(self, eventtime, state):
+        get_state = self.get_switch_states(state)
+        for i, val in enumerate(get_state):
+            if val != self.endstop_pin_status[i]:
+                if val == 1:
+                    self.gcode.respond_info("z%s Photoelectric switch triggered" % (i+1))
+                else:
+                    self.gcode.respond_info("z%s Photoelectric switch not triggered" % (i+1))
+        self.endstop_pin_status = get_state
     def zdown_force_stop(self, web_request):
         self.force_stop_flag = True
         self.gcode.respond_info("zdown_force_stop start")
         self.z_align_force_stop.send([self.oidz])
         self.gcode.respond_info("zdown_force_stop end")
         web_request.send({"result": "success"})
+    def get_status(self, eventtime=None):
+        return {"endstop_pin_status": self.endstop_pin_status}
     def _build_config(self):  
         config_z_align = "config_z_align oid=%d"%self.oidz
         logging.info(config_z_align)
@@ -79,6 +98,8 @@ class Zalign:
             logging.info("[stepper_indx_z=%d] config_z_align_add oid=%d z_indx=%d zs_pin=%s zd_pin=%s zd_up=%d zes_pin=%s zes_untrig=%d" % (
                 stepper_indx_z, self.oidz, stepper_indx_z, step_pin_z, dir_pin_z, self.zd_up, endstop_pin, self.zes_untrig))
         self.z_align_force_stop = self.mcu.lookup_command("z_align_force_stop oid=%c", cq=None)
+        for _ in range(len(self.endstop_pin_z)):
+            self.endstop_pin_status.append(0)
     def get_real_zmax_path(self):
         return self.real_zmax_path
     def cmd_ZDOWN_FORCE_STOP(self, gcmd):
@@ -145,6 +166,7 @@ class Zalign:
         reactor = self.printer.get_reactor()
         query_z_align = self.mcu.lookup_query_command("query_z_align oid=%c enable=%c quickSpeed=%u slowSpeed=%u risingDist=%u filterCnt=%c safeDist=%u",
                                                       "z_align_status oid=%c flag=%i deltaError1=%i", oid=self.oidz)
+        z_align_force_stop = self.mcu.lookup_command("z_align_force_stop oid=%c", cq=None)
 
         rotation_distance = self.config.getsection('stepper_z').getfloat('rotation_distance')  # 8
         microsteps = self.config.getsection('stepper_z').getfloat('microsteps')  # 16
@@ -170,10 +192,12 @@ class Zalign:
                 usetime = nowtime-curtime
                 if self.force_stop_flag:
                     self.force_stop_flag = False
+                    z_align_force_stop.send([self.oidz])
                     return MOTOR_PROTECT_ERROR
                 if usetime > self.timeout:
                     self.gcode._respond_error("""{"code":"key351", "msg":"z_align ZDOWN timeout:%ss result: %s", "values":[]}"""%(self.timeout, str(self.mcu._serial.z_align_status)))
-                    return -10000
+                    z_align_force_stop.send([self.oidz])
+                    return MOTOR_ZDOWN_TIMEOUT
                 if self.mcu._serial.z_align_status.get("flag", 0) == 1:
                     self.gcode.respond_info("usetime:%s z_align_status :%s"%(usetime, str(self.mcu._serial.z_align_status)))
                     deltaError = int(self.mcu._serial.z_align_status.get("deltaError1", 0))
@@ -197,7 +221,7 @@ class Zalign:
             else:
                 self.gcode._respond_error("""{"code":"key352", "msg":"z_align ZDOWN too many retries: %s, deltaError:%s retry_tolerance:%s", "values":[]}"""%(deltaError, self.retry_tolerance, str(self.retries)))
                 break
-            if deltaError == -10000:
+            if deltaError == MOTOR_ZDOWN_TIMEOUT:
                 # timeout 
                 toolhead = self.printer.lookup_object('toolhead')
                 now_pos = toolhead.get_position()
@@ -205,7 +229,7 @@ class Zalign:
                 gcmd = 'G1 F%d X%.3f Y%.3f Z%.3f' % (1000, now_pos[0]+0.001, now_pos[1], now_pos[2])
                 self.gcode.run_script_from_command(gcmd)
                 self.gcode.run_script_from_command("M84")
-                break
+                return MOTOR_ZDOWN_TIMEOUT
             elif deltaError == MOTOR_PROTECT_ERROR:
                 self.gcode.run_script_from_command("M84")
                 self.gcode.respond_info("zdown_force_stop success")

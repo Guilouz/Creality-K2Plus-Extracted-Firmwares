@@ -212,6 +212,7 @@ class TMCErrorCheck:
 class TMCCommandHelper:
     def __init__(self, config, mcu_tmc, current_helper):
         self.printer = config.get_printer()
+        self.config = config
         self.stepper_name = ' '.join(config.get_name().split()[1:])
         self.name = config.get_name().split()[-1]
         self.mcu_tmc = mcu_tmc
@@ -245,9 +246,59 @@ class TMCCommandHelper:
                                    self.cmd_SET_TMC_CURRENT,
                                    desc=self.cmd_SET_TMC_CURRENT_help)
     def _init_registers(self, print_time=None):
+        name_parts = self.config.get_name().split()
+        logging.info("hys: name_parts: %s" % name_parts)
         # Send registers
         for reg_name, val in self.fields.registers.items():
+            # logging.info("hys: reg_name: %s, val: %s" % (reg_name, val))
+            if name_parts[0] == "tmc2262" and reg_name == "PLL":
+                self.TMC2262_PLL_init(val, print_time)
+                continue
             self.mcu_tmc.set_register(reg_name, val, print_time)
+    def TMC2262_PLL_init(self, val, print_time=None):
+        # tmc2262 special register init
+        logging.info("hys: TMC2262_PLL_init start")
+        logging.info("hys: set PLL val -- 0x%x" % val)
+        # PLL need mask
+        commit_mask = self.mcu_tmc.fields.all_fields["PLL"]["commit"]
+        clk_sys_sel_mask = self.mcu_tmc.fields.all_fields["PLL"]["clk_sys_sel"]
+        clk_fsm_ena_mask = self.mcu_tmc.fields.all_fields["PLL"]["clk_fsm_ena"]
+        adc_clk_ena_mask = self.mcu_tmc.fields.all_fields["PLL"]["adc_clk_ena"]
+        clk_1mo_tmo_mask = self.mcu_tmc.fields.all_fields["PLL"]["clk_1mo_tmo"]
+        clk_loss_mask = self.mcu_tmc.fields.all_fields["PLL"]["clk_loss"]
+        clk_is_stuck_mask = self.mcu_tmc.fields.all_fields["PLL"]["clk_is_stuck"]
+        pll_lock_loss_mask = self.mcu_tmc.fields.all_fields["PLL"]["pll_lock_loss"]
+        set_times = 3
+        while set_times:
+            # clk_fsm_ena
+            self.mcu_tmc.set_register("PLL", 0, print_time)
+            # configure & commit necessary bits --> internal clock
+            logging.info("hys: configure & commit necessary bits, val = 0x%x" % (val | commit_mask | clk_fsm_ena_mask | clk_sys_sel_mask))
+            self.mcu_tmc.set_register("PLL", val | commit_mask | clk_fsm_ena_mask | clk_sys_sel_mask, print_time)
+            # check for commit bit to be reset
+            logging.info("hys: check for commit bit to be reset")
+            timeout = 3
+            while timeout:
+                val_ret = self.mcu_tmc.get_register("PLL")
+                logging.info("hys: get value: 0x%x" % val_ret)
+                if not (val_ret & commit_mask):
+                    logging.info("hys: commit bit reset")
+                    break
+                timeout -= 1
+            # reset error
+            val_clear = adc_clk_ena_mask | pll_lock_loss_mask | clk_is_stuck_mask | clk_loss_mask | clk_1mo_tmo_mask | clk_fsm_ena_mask
+            self.mcu_tmc.set_register("PLL", val_clear, print_time)
+            logging.info("hys: reset error, set value 0x%x" % val_clear)
+            # check for errors and clk_fsm_ena, kepp trying if errors exist, else leave
+            val_ret = self.mcu_tmc.get_register("PLL")
+            val_clear = pll_lock_loss_mask | clk_is_stuck_mask | clk_loss_mask | clk_1mo_tmo_mask | clk_fsm_ena_mask
+            logging.info("hys: check for errors and clk_fsm_ena, get value 0x%x, val_clear = 0x%x" % (val_ret, val_clear))
+            if (val_ret & val_clear) == clk_fsm_ena_mask:
+                logging.info("hys: errors clear")
+                break
+            set_times -= 1
+        logging.info("hys: TMC2262_PLL_init end")
+
     cmd_INIT_TMC_help = "Initialize TMC stepper driver registers"
     def cmd_INIT_TMC(self, gcmd):
         logging.info("INIT_TMC %s", self.name)
@@ -561,3 +612,18 @@ def TMCStealthchopHelper(config, mcu_tmc, tmc_freq):
     else:
         # TMC2208 uses en_spreadCycle
         fields.set_field("en_spreadcycle", not en_pwm_mode)
+
+# Helper to configure StallGuard and CoolStep minimum velocity
+def TMCVcoolthrsHelper(config, mcu_tmc, tmc_freq):
+    fields = mcu_tmc.get_fields()
+    velocity = config.getfloat('coolstep_threshold', None, minval=0.)
+    tcoolthrs = 0
+    if velocity:
+        stepper_name = " ".join(config.get_name().split()[1:])
+        sconfig = config.getsection(stepper_name)
+        rotation_dist, steps_per_rotation = stepper.parse_step_distance(sconfig)
+        step_dist = rotation_dist / steps_per_rotation
+        step_dist_256 = step_dist / (1 << fields.get_field("mres"))
+        tcoolthrs = int(tmc_freq * step_dist_256 / velocity + .5)
+    fields.set_field("tcoolthrs", tcoolthrs)
+

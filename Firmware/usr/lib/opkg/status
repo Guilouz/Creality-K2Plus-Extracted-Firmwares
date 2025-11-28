@@ -454,15 +454,15 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1750325216
 
 Package: ncnn_yolov5
-Version: 2e28a22a
-Depends: libc, librt, libpthread, libpthread, librt, libstdcpp6, zlib, libjpeg, libfreetype, opencv, libjson-c5, libcurl4
+Version: a418fe1d
+Depends: libc, librt, libpthread, libpthread, librt, libstdcpp6, zlib, libjpeg, libfreetype, opencv, libjson-c5, libcurl4, minizip
 Status: install user installed
 Architecture: arm_cortex-a7_neon
 Installed-Time: 1750325216
 Auto-Installed: yes
 
 Package: base-files
-Version: 4-r0-8ddd3b975
+Version: 4-r0-4e2b22550
 Depends: libc, librt, libpthread, netifd, procd, jsonfilter, fstools, fwtool
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -647,8 +647,8 @@ Installed-Time: 1750325216
 Auto-Installed: yes
 
 Package: libhv
-Version: v1.3.0
-Depends: libc, librt, libpthread, libstdcpp6
+Version: v1.3.3
+Depends: libc, librt, libpthread, libstdcpp6, libopenssl1.1
 Status: install user installed
 Architecture: arm_cortex-a7_neon
 Installed-Time: 1750325216
@@ -714,8 +714,8 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1750325216
 
 Package: libcxcloud
-Version: 1ffb566
-Depends: libc, librt, libpthread, libcrlog, aliyun-oss-cpp-sdk, libapr, libaprutil, libopenssl1.1, libcurl4, libjson-c5, jsoncpp, mxml, paho-mqtt-c, libstdcpp6, libuuid1, libpng, libqrencode, aliyun-oss-c-sdk, aliyun-vod-sdk
+Version: a32761a
+Depends: libc, librt, libpthread, libfmtlog, aliyun-oss-cpp-sdk, libapr, libaprutil, libopenssl1.1, libcurl4, libjson-c5, jsoncpp, mxml, paho-mqtt-c, libstdcpp6, libuuid1, libpng, libqrencode, aliyun-oss-c-sdk, aliyun-vod-sdk
 Status: install user installed
 Architecture: arm_cortex-a7_neon
 Installed-Time: 1750325216
@@ -973,6 +973,14 @@ Auto-Installed: yes
 Package: libshm
 Version: 5da1166
 Depends: libc, librt, libpthread
+Status: install user installed
+Architecture: arm_cortex-a7_neon
+Installed-Time: 1750325216
+Auto-Installed: yes
+
+Package: minizip
+Version: 4.0.10-2
+Depends: libc, librt, libpthread, zlib
 Status: install user installed
 Architecture: arm_cortex-a7_neon
 Installed-Time: 1750325216
@@ -1305,6 +1313,14 @@ Version: (null)-3
 Depends: libpthread
 Status: install hold installed
 Essential: yes
+Architecture: arm_cortex-a7_neon
+Installed-Time: 1750325216
+Auto-Installed: yes
+
+Package: libfmtlog
+Version: 92efd1f
+Depends: libc, librt, libpthread, libstdcpp6
+Status: install user installed
 Architecture: arm_cortex-a7_neon
 Installed-Time: 1750325216
 Auto-Installed: yes
@@ -1738,7 +1754,7 @@ Installed-Time: 1750325216
 Auto-Installed: yes
 
 Package: klipper
-Version: 9aa9fc81
+Version: 2e0b2197
 Depends: libc, librt, libpthread, python3, python3-setuptools, calc_psd
 Status: install user installed
 Architecture: arm_cortex-a7_neon
@@ -1817,8 +1833,8 @@ Architecture: arm_cortex-a7_neon
 Installed-Time: 1750325216
 
 Package: lvgl_klipper
-Version: 17cd0f872
-Depends: libc, librt, libpthread, libcrlog, aliyun-oss-cpp-sdk, libapr, libaprutil, libatomic1, libffmpeg-full, libblobmsg-json20210516, libopenssl1.1, libcurl4, libfreetype, libhv, libinotifytools, libjpeg, libjson-c5, jsoncpp, mxml, libpng, paho-mqtt-c, libprotobuf-c, libqrencode, libstdcpp6, libubox20210516, libubus20210630, libuuid1, wifimanager-v2.0-lib, libcxcloud
+Version: e619e8c40
+Depends: libc, librt, libpthread, libfmtlog, aliyun-oss-cpp-sdk, libapr, libaprutil, libatomic1, libffmpeg-full, libblobmsg-json20210516, libopenssl1.1, libcurl4, libfreetype, libhv, libinotifytools, libjpeg, libjson-c5, jsoncpp, mxml, libpng, paho-mqtt-c, libprotobuf-c, libqrencode, libstdcpp6, libubox20210516, libubus20210630, libuuid1, wifimanager-v2.0-lib, libcxcloud
 Status: install user installed
 Architecture: arm_cortex-a7_neon
 Installed-Time: 1750325216

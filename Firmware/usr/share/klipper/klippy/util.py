@@ -5,7 +5,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import sys, os, pty, fcntl, termios, signal, logging, json, time
 import subprocess, traceback, shlex
-
+from functools import partial
 
 ######################################################################
 # Low-level Unix commands
@@ -157,3 +157,13 @@ def get_git_version(from_file=True):
     if from_file:
         return get_version_from_file(klippy_src)
     return "?"
+
+# DFS search tools func
+def key_exists(d, target_key):
+    if isinstance(d, dict):
+        if target_key in d:
+            return True
+        return any(key_exists(v, target_key) for v in d.values())
+    elif isinstance(d, list):
+        return any(key_exists(item, target_key) for item in d)
+    return False

@@ -14,6 +14,8 @@ class ExtruderStepper:
         self.config_pa = config.getfloat('pressure_advance', 0., minval=0.)
         self.config_smooth_time = config.getfloat(
                 'pressure_advance_smooth_time', 0.040, above=0., maxval=.200)
+        self.pressure_advance_enabled = config.getboolean(
+            'pressure_advance_enabled', True)
         # Setup stepper
         self.stepper = stepper.PrinterStepper(config)
         ffi_main, ffi_lib = chelper.get_ffi()
@@ -31,6 +33,9 @@ class ExtruderStepper:
         gcode.register_mux_command("SET_PRESSURE_ADVANCE", "EXTRUDER",
                                    self.name, self.cmd_SET_PRESSURE_ADVANCE,
                                    desc=self.cmd_SET_PRESSURE_ADVANCE_help)
+        gcode.register_mux_command("ENABLE_PRESSURE_ADVANCE", "EXTRUDER",
+                                   None, self.cmd_ENABLE_PRESSURE_ADVANCE,
+                                   desc=self.cmd_ENABLE_PRESSURE_ADVANCE_help)
         gcode.register_mux_command("SET_EXTRUDER_ROTATION_DISTANCE", "EXTRUDER",
                                    self.name, self.cmd_SET_E_ROTATION_DISTANCE,
                                    desc=self.cmd_SET_E_ROTATION_DISTANCE_help)
@@ -90,6 +95,14 @@ class ExtruderStepper:
             raise gcmd.error("Unable to infer active extruder stepper")
         extruder.extruder_stepper.cmd_SET_PRESSURE_ADVANCE(gcmd)
     def cmd_SET_PRESSURE_ADVANCE(self, gcmd):
+        if not self.pressure_advance_enabled:
+            msg = "SET_PRESSURE_ADVANCE is disabled. Use 'ENABLE_PRESSURE_ADVANCE VALUE=1' to enable"
+            gcmd.respond_info(msg)
+            return
+        else:
+            msg = "SET_PRESSURE_ADVANCE is enabled"
+            gcmd.respond_info(msg)
+
         pressure_advance = gcmd.get_float('ADVANCE', self.pressure_advance,
                                           minval=0.)
         smooth_time = gcmd.get_float('SMOOTH_TIME',
@@ -108,6 +121,18 @@ class ExtruderStepper:
                 gcode_move.recordPrintFileName(v_sd.print_file_name_path, v_sd.current_file.name, pressure_advance="SET_PRESSURE_ADVANCE ADVANCE=%s SMOOTH_TIME=%s" % (pressure_advance, smooth_time))
         except Exception as err:
             logging.error(err)
+    
+    cmd_ENABLE_PRESSURE_ADVANCE_help = "Enable or disable cmd_SET_PRESSURE_ADVANCE (VALUE=1 to enable, VALUE=0 to disable)"
+    def cmd_ENABLE_PRESSURE_ADVANCE(self, gcmd):
+        enable = gcmd.get_int('VALUE', minval=0, maxval=1)
+        self.pressure_advance_enabled = enable
+        if enable:
+            msg = "Pressure advance enabled"
+        else:
+            msg = "Pressure advance disabled"
+        
+        gcmd.respond_info(msg)
+
     cmd_SET_E_ROTATION_DISTANCE_help = "Set extruder rotation distance"
     def cmd_SET_E_ROTATION_DISTANCE(self, gcmd):
         rotation_dist = gcmd.get_float('DISTANCE', None)
@@ -252,13 +277,15 @@ class PrinterExtruder:
             print_stats = self.printer.lookup_object('print_stats')
             m = """{"code":"key111", "msg": "Extrude below minimum temp, See the 'min_extrude_temp' config option for details", "values": []}"""
             if print_stats.state == "printing" and self.extrude_below_min_temp_err_is_report==False:
-                gcode._respond_error(m)
+                # gcode._respond_error(m)
+                self.printer.command_warning(m)
                 self.extrude_below_min_temp_err_is_report = True
                 gcode.respond_info("state:%s pause_start:%s" % (self.printer.lookup_object('print_stats').state, self.printer.lookup_object('pause_resume').pause_start))
                 if self.printer.lookup_object('print_stats').state == "printing" and self.printer.lookup_object('pause_resume').pause_start == False:
                     self.printer.lookup_object('gcode').run_script_from_command("PAUSE")
             elif print_stats.state == "standby":
-                gcode._respond_error(m)
+                # gcode._respond_error(m)
+                self.printer.command_warning(m)
             return
         if (not move.axes_d[0] and not move.axes_d[1]) or axis_r < 0.:
             # Extrude only move (or retraction move) - limit accel and velocity
@@ -317,7 +344,8 @@ class PrinterExtruder:
             if extruder is None:
                 if temp <= 0.:
                     return
-                raise gcmd.error("""{"code":"key113", "msg": "Extruder not configured", "values": []}""")
+                #raise gcmd.error("""{"code":"key113", "msg": "Extruder not configured", "values": []}""")
+                return gcmd.warning("""!{"code":"key113", "msg": "Extruder not configured", "values": []}""")
         else:
             extruder = self.printer.lookup_object('toolhead').get_extruder()
         pheaters = self.printer.lookup_object('heaters')

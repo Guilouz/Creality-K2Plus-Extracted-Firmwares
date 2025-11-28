@@ -1,0 +1,10 @@
+Package: libfmtlog
+Version: 92efd1f
+Depends: libc, librt, libpthread, libstdcpp6
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/creality/libfmtlog
+SourceName: libfmtlog
+Section: creality
+SourceDateEpoch: 1755248938
+Architecture: arm_cortex-a7_neon
+Installed-Size: 105792
+Description:  with libfmtlog support

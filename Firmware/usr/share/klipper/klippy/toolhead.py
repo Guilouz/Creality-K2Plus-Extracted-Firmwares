@@ -429,15 +429,8 @@ class ToolHead:
         # print("get #################################################move: %s %s" % (newpos, speed))
         if newpos[2] < self.kin.limits[2][1]:
             self.record_z_pos(newpos[2])
-        # starttime=time.time()
-        
-        
-        # self.double_array[12]=speed
-        # print(f"time cost of move: {time.time()-starttime}")
-        
-        # starttime=time.time()
+
         move = mymovie.PyMove()
-        # print(f"time cost of PyMove: {time.time()-starttime}")
         
         if self.double_array[13]==0:
             self.commanded_pos[:] = newpos
@@ -448,14 +441,16 @@ class ToolHead:
             gcode = self.printer.lookup_object('gcode')
             m = """{"code":"key111", "msg": "Extrude below minimum temp, See the 'min_extrude_temp' config option for details", "values": []}"""
             if print_stats.state == "printing" and self.extrude_below_min_temp_err_is_report==False:
-                gcode._respond_error(m)
+                #gcode._respond_error(m)
+                self.printer.command_warning(m)  # TODO: 非raise/return 走完剩下逻辑，冗余代码逻辑待优化清理
                 self.extrude_below_min_temp_err_is_report = True
                 gcode.respond_info("state:%s pause_start:%s" % (self.printer.lookup_object('print_stats').state, self.printer.lookup_object('pause_resume').pause_start))
                 if self.printer.lookup_object('print_stats').state == "printing" and self.printer.lookup_object('pause_resume').pause_start == False:
                     self.printer.lookup_object('gcode').run_script_from_command("PAUSE")
             elif print_stats.state == "standby":
             # elif print_stats.state != "printing":
-                gcode._respond_error(m)
+                # gcode._respond_error(m)
+                self.printer.command_warning(m)
             return
             # raise self.printer.command_error("""{"code":"key111", "msg": "Extrude below minimum temp\nSee the 'min_extrude_temp' config option for details", "values": []}""")
         elif self.double_array[13]==-2:
@@ -520,14 +515,16 @@ class ToolHead:
             gcode = self.printer.lookup_object('gcode')
             m = """{"code":"key111", "msg": "Extrude below minimum temp, See the 'min_extrude_temp' config option for details", "values": []}"""
             if print_stats.state == "printing" and self.extrude_below_min_temp_err_is_report==False:
-                gcode._respond_error(m)
+                # gcode._respond_error(m)
+                self.printer.command_warning(m)
                 self.extrude_below_min_temp_err_is_report = True
                 gcode.respond_info("state:%s pause_start:%s" % (self.printer.lookup_object('print_stats').state, self.printer.lookup_object('pause_resume').pause_start))
                 if self.printer.lookup_object('print_stats').state == "printing" and self.printer.lookup_object('pause_resume').pause_start == False:
                     self.printer.lookup_object('gcode').run_script_from_command("PAUSE")
             elif print_stats.state == "standby":
             # elif print_stats.state != "printing":
-                gcode._respond_error(m)
+                # gcode._respond_error(m)
+                self.printer.command_warning(m)
             return
             # raise self.printer.command_error("""{"code":"key111", "msg": "Extrude below minimum temp\nSee the 'min_extrude_temp' config option for details", "values": []}""")
         elif self.double_array[13]==-2:

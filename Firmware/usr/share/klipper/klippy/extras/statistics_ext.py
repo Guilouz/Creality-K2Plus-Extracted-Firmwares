@@ -47,7 +47,8 @@ class PrinterSysStats:
     def get_status(self, eventtime):
         return {'sysload': self.last_load_avg,
                 'cputime': self.total_process_time,
-                'memavail': self.last_mem_avail}
+                'memavail': self.last_mem_avail,
+                'monotonic': eventtime}
 
 class PrinterStats:
     def __init__(self, config):

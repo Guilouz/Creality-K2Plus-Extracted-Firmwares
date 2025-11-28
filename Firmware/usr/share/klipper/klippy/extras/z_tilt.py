@@ -125,7 +125,8 @@ class RetryHelper:
                 error, self.retry_tolerance))
         if self.check_increase(error):
             err_msg = """{"code":"key349", "msg":"Retries aborting: %s is increasing. %s", "values":[]}""" % (self.value_label, self.error_msg_extra)
-            raise self.gcode.error(err_msg)
+            # raise self.gcode.error(err_msg)
+            return self.gcode.warning(err_msg)
         if error <= self.retry_tolerance:
             toolhead = self.printer.lookup_object('toolhead')
             if toolhead.G29_flag == True:

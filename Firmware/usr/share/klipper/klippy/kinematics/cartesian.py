@@ -5,6 +5,8 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging
 import stepper
+import mymodule.mymovie as mymovie
+import inspect
 
 class CartKinematics:
     def __init__(self, toolhead, config):
@@ -23,9 +25,9 @@ class CartKinematics:
                                             self._motor_off)
         # Setup boundary checks
         max_velocity, max_accel = toolhead.get_max_velocity()
-        self.max_z_velocity = config.getfloat('max_z_velocity', max_velocity,
+        self.__max_z_velocity = config.getfloat('max_z_velocity', max_velocity,
                                               above=0., maxval=max_velocity)
-        self.max_z_accel = config.getfloat('max_z_accel', max_accel,
+        self.__max_z_accel = config.getfloat('max_z_accel', max_accel,
                                            above=0., maxval=max_accel)
         self.limits = [(1.0, -1.0)] * 3
         ranges = [r.get_range() for r in self.rails]
@@ -45,6 +47,28 @@ class CartKinematics:
             self.printer.lookup_object('gcode').register_command(
                 'SET_DUAL_CARRIAGE', self.cmd_SET_DUAL_CARRIAGE,
                 desc=self.cmd_SET_DUAL_CARRIAGE_help)
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
+    def get_max_z_velocity(self):
+        return self.__max_z_velocity
+    def set_max_z_velocity(self, max_velocity):
+        self.__max_z_velocity = max_velocity
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
+    def get_max_z_accel(self):
+        return self.__max_z_accel
+    def set_max_z_accel(self, max_accel):
+        for frame in inspect.stack():
+             print(frame.function)
+        self.__max_z_accel = max_accel
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
     def get_steppers(self):
         rails = self.rails
         if self.dual_carriage_axis is not None:
@@ -53,17 +77,50 @@ class CartKinematics:
         return [s for rail in rails for s in rail.get_steppers()]
     def calc_position(self, stepper_positions):
         return [stepper_positions[rail.get_name()] for rail in self.rails]
+    def set_z_limit(self, min_z, max_z):
+        self.limits[2] = (min_z, max_z)
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
+    def set_limits(self, min_x, max_x, min_y, max_y):
+        self.limits[0] = (min_x,max_x)
+        self.limits[1] = (min_y,max_y)
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
+    def restore_limits(self):
+        for i, rail in enumerate(self.rails):
+            if i==0 or i==1:
+                self.limits[i] = rail.get_range()
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
     def set_position(self, newpos, homing_axes):
         for i, rail in enumerate(self.rails):
             rail.set_position(newpos)
             if i in homing_axes:
                 self.limits[i] = rail.get_range()
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
     def note_z_not_homed(self):
         # Helper for Safe Z Home
         self.limits[2] = (1.0, -1.0)
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
     def note_xy_not_homed(self):
         self.limits[0] = (1.0, -1.0)
         self.limits[1] = (1.0, -1.0)
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
     def _home_axis(self, homing_state, axis, rail):
         # Determine movement
         position_min, position_max = rail.get_range()
@@ -92,6 +149,10 @@ class CartKinematics:
                 self._home_axis(homing_state, axis, self.rails[axis])
     def _motor_off(self, print_time):
         self.limits = [(1.0, -1.0)] * 3
+        mymovie.Py_set_corexykin_info(self.limits[0][0], self.limits[0][1],
+                                       self.limits[1][0], self.limits[1][1],
+                                       self.limits[2][0], self.limits[2][1],
+                                       self.__max_z_velocity, self.__max_z_accel)
     def _check_endstops(self, move):
         end_pos = move.end_pos
         for i in (0, 1, 2):
@@ -114,7 +175,7 @@ class CartKinematics:
         self._check_endstops(move)
         z_ratio = move.move_d / abs(move.axes_d[2])
         move.limit_speed(
-            self.max_z_velocity * z_ratio, self.max_z_accel * z_ratio)
+            self.__max_z_velocity * z_ratio, self.__max_z_accel * z_ratio)
     def get_status(self, eventtime):
         axes = [a for a, (l, h) in zip("xyz", self.limits) if l <= h]
         return {
@@ -122,6 +183,11 @@ class CartKinematics:
             'axis_minimum': self.axes_min,
             'axis_maximum': self.axes_max,
         }
+    def get_status_for_record_z_pos(self):
+        if self.limits[2][0] <= self.limits[2][1]:
+            return True
+        else:
+            return False
     # Dual carriage support
     def _activate_carriage(self, carriage):
         toolhead = self.printer.lookup_object('toolhead')

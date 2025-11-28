@@ -17,3 +17,5 @@ You can find the firmware changes for each version:
 - [Changes from **1.1.3.1 Beta** to **1.1.3.5 Beta**](https://github.com/Guilouz/Creality-K2Plus-Extracted-Firmwares/commit/f94289f7b69067cbaa07bcbe701a28034ba83147)
 - [Changes from **1.1.3.5 Beta** to **1.1.3.7 Beta**](https://github.com/Guilouz/Creality-K2Plus-Extracted-Firmwares/commit/2f01b9c5ef5c381cecad148a57454deeb6659cc9)
 - [Changes from **1.1.3.7 Beta** to **1.1.3.13**](https://github.com/Guilouz/Creality-K2Plus-Extracted-Firmwares/commit/8c48982c2286e80a93c8a4c5ed06aaa9f3121fe8)
+- [Changes from **1.1.3.7 Beta** to **1.1.4.3 Beta**]()
+- [Changes from **1.1.4.3 Beta** to **1.1.4.8**]()

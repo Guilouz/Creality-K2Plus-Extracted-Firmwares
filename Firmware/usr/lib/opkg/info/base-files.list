@@ -44,6 +44,7 @@
 /lib/preinit/80_mount_root
 /etc/rc.local
 /lib/functions/uci-defaults.sh
+/usr/bin/wl
 /etc/init.d/led
 /etc/ethers
 /etc/init.d/gpio_switch

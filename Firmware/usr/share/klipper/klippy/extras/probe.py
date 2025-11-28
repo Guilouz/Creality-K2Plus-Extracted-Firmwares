@@ -114,14 +114,24 @@ class PrinterProbe:
         return self.lift_speed
     def get_offsets(self):
         return self.x_offset, self.y_offset, self.z_offset
-    def _probe(self, speed):
+    def _probe(self, speed, max_z_dist=None):
         toolhead = self.printer.lookup_object('toolhead')
         curtime = self.printer.get_reactor().monotonic()
         if 'z' not in toolhead.get_status(curtime)['homed_axes']:
             raise self.printer.command_error("""{"code":"key96", "msg": "Must home before probe", "values": []}""")
         phoming = self.printer.lookup_object('homing')
         pos = toolhead.get_position()
-        pos[2] = self.z_position
+        self.prtouch_v3 = self.printer.lookup_object('prtouch_v3') if self.printer.objects.get('prtouch_v3') else None
+        if self.prtouch_v3 is not None:
+            suspended_det_status = self.prtouch_v3.get_suspended_det_status()
+            # 限制探针最大下探深度（目标位置）
+            target_z = self.z_position
+            if max_z_dist is not None and suspended_det_status is True:
+                start_z = pos[2] # 原始 Z 起点
+                max_target_z = start_z - max_z_dist
+                if target_z < max_target_z:
+                    target_z = max_target_z
+        pos[2] = target_z
         try:
             epos = phoming.probing_move(self.mcu_probe, pos, speed)
         except self.printer.command_error as e:
@@ -168,6 +178,7 @@ class PrinterProbe:
         samples_retries = gcmd.get_int("SAMPLES_TOLERANCE_RETRIES",
                                        self.samples_retries, minval=0)
         samples_result = gcmd.get("SAMPLES_RESULT", self.samples_result)
+        zmax_dist = gcmd.get_float("ZMAX_DIST", None, above=0.)
         must_notify_multi_probe = not self.multi_probe_pending
         if must_notify_multi_probe:
             self.multi_probe_begin()
@@ -176,7 +187,10 @@ class PrinterProbe:
         positions = []
         while len(positions) < sample_count:
             # Probe position
-            pos = self._probe(speed)
+            if zmax_dist is not None:
+                pos = self._probe(speed, max_z_dist=zmax_dist)
+            else:
+                pos = self._probe(speed)
             positions.append(pos)
             # Check samples tolerance
             z_positions = [p[2] for p in positions]
@@ -248,6 +262,7 @@ class PrinterProbe:
         for i in range(len(positions)):
             deviation_sum += pow(positions[i][2] - avg_value, 2.)
         sigma = (deviation_sum / len(positions)) ** 0.5
+        z_values = [pos[2] for pos in positions]
         # Show information
         gcmd.respond_info(
             "probe accuracy results: maximum %.6f, minimum %.6f, range %.6f, "

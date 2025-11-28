@@ -104,18 +104,18 @@ def get_print_file_metadata(file_path):
                 line = f.readline() 
                 if not line.startswith(";"):
                     continue
-                if re.findall(r";MINX:(.*)\n", line):  
-                    result["MINX"] = float(re.findall(r";MINX:(.*)\n", line)[0].strip())
-                if re.findall(r";MINY:(.*)\n", line):  
-                    result["MINY"] = float(re.findall(r";MINY:(.*)\n", line)[0].strip()) 
-                if re.findall(r";MINZ:(.*)\n", line):  
-                    result["MINZ"] = float(re.findall(r";MINZ:(.*)\n", line)[0].strip())
-                if re.findall(r";MAXX:(.*)\n", line):  
-                    result["MAXX"] = float(re.findall(r";MAXX:(.*)\n", line)[0].strip()) 
-                if re.findall(r";MAXY:(.*)\n", line):  
-                    result["MAXY"] = float(re.findall(r";MAXY:(.*)\n", line)[0].strip())
-                if re.findall(r";MAXZ:(.*)\n", line):  
-                    result["MAXZ"] = float(re.findall(r";MAXZ:(.*)\n", line)[0].strip())
+                if re.findall(r"; ?MINX.*?(\d+\.?\d*)", line):  
+                    result["MINX"] = float(re.findall(r"; ?MINX.*?(\d+\.?\d*)", line)[0].strip())
+                if re.findall(r"; ?MINY.*?(\d+\.?\d*)", line):  
+                    result["MINY"] = float(re.findall(r"; ?MINY.*?(\d+\.?\d*)", line)[0].strip()) 
+                if re.findall(r"; ?MINZ.*?(\d+\.?\d*)", line):  
+                    result["MINZ"] = float(re.findall(r"; ?MINZ.*?(\d+\.?\d*)", line)[0].strip())
+                if re.findall(r"; ?MAXX.*?(\d+\.?\d*)", line):  
+                    result["MAXX"] = float(re.findall(r"; ?MAXX.*?(\d+\.?\d*)", line)[0].strip()) 
+                if re.findall(r"; ?MAXY.*?(\d+\.?\d*)", line):  
+                    result["MAXY"] = float(re.findall(r"; ?MAXY.*?(\d+\.?\d*)", line)[0].strip())
+                if re.findall(r"; ?MAXZ.*?(\d+\.?\d*)", line):  
+                    result["MAXZ"] = float(re.findall(r"; ?MAXZ.*?(\d+\.?\d*)", line)[0].strip())
                 if re.findall(r";Machine Height:(.*)\n", line):  
                     result["MachineHeight"] = float(re.findall(r";Machine Height:(.*)\n", line)[0].strip())
                 if re.findall(r";Machine Width:(.*)\n", line):  
@@ -126,6 +126,9 @@ def get_print_file_metadata(file_path):
                     result["MaterialName"] = str(re.findall(r";Material Name:(.*)\n", line)[0].strip())
                 if re.findall(r";Material Type:(.*)\n", line):  
                     result["MaterialType"] = str(re.findall(r";Material Type:(.*)\n", line)[0].strip())
+                if re.findall(r"; multicolor_method = (.*)\n", line):
+                    result["multicolor_method"] = int(re.findall(r"; multicolor_method = (.*)\n", line)[0].strip())
+
     except Exception as err:
         print(err)
         return None
@@ -925,13 +928,14 @@ class KiriMoto(BaseSlicer):
 class Creality(BaseSlicer):
     def check_identity(self, data: str) -> Optional[Dict[str, str]]:
         aliases = {
+            'Creality_Cloud': r"Creality_Cloud",
             'Creative3D': r"Creative3D",
             'Creality': r"Creality"
         }
         pattern = r'Version : V([\d\.]+)'
         match_version = re.search(pattern, data)
         if not match_version:
-            match_version = re.search(r'Creality_Print V([\d\.]+)', data)
+            match_version = re.search(r'[tr] V([\d\.]+)', data)
         slicer_version = match_version.group(1) if match_version else "1.0"
         for name, expr in aliases.items():
             match = re.search(expr, data)
@@ -946,6 +950,8 @@ class Creality(BaseSlicer):
         first_layer_height = _regex_find_first(r";MINZ:(\d+\.?\d*)", self.header_data)
         if not first_layer_height:
             first_layer_height = _regex_find_first(r";MINZ:(\d+\.?\d*)", self.footer_data)
+        if not first_layer_height:
+            first_layer_height = _regex_find_first(r"; first_layer_height = (\d+\.?\d*)", self.footer_data)            
         return first_layer_height
 
     def parse_model_info(self):
@@ -995,6 +1001,10 @@ class Creality(BaseSlicer):
         return _regex_find_string(
             r";Material Name:(.+)", self.header_data)
 
+    def parse_uuid(self) -> Optional[str]:
+        return _regex_find_string(
+            r"; creality_uuid: (.+)", self.header_data)
+    
     def parse_filament_total(self) -> Optional[float]:
         filament_total = _regex_find_first(
             r";Filament used:(\d+\.?\d*)m", self.header_data)
@@ -1012,6 +1022,17 @@ class Creality(BaseSlicer):
     def parse_estimated_time(self) -> Optional[float]:
         total_time = _regex_find_first(
             r";TIME:(\d+)", self.header_data)
+        if not total_time:
+            hour = _regex_find_int(r"; estimated printing time.*?(\d+)h",self.footer_data)
+            min = _regex_find_int(r"; estimated printing time.*?(\d+)m",self.footer_data)
+            sec = _regex_find_int(r"; estimated printing time.*?(\d+)s",self.footer_data)
+            total_time = 0
+            if hour:
+                total_time = hour * 60 * 60
+            if min:
+                total_time = total_time + min * 60
+            if sec:
+                total_time = total_time + sec
         return total_time
 
     def parse_first_layer_extr_temp(self) -> Optional[float]:
@@ -1051,6 +1072,15 @@ class Creality(BaseSlicer):
         if default_filament_colour_match:
             default_filament_colour = default_filament_colour_match.group(1).split(';')
         return default_filament_colour
+    
+    def parse_filament_used_g(self) -> Optional[Tuple[Any, ...]]:
+        filament_used_g = []
+        filament_used_g_match = re.search(r'; filament used \[g\] = (.+)', self.header_data)
+        if not filament_used_g_match:
+            filament_used_g_match = re.search(r'; filament used \[g\] = (.+)', self.footer_data)
+        if filament_used_g_match:
+            filament_used_g = filament_used_g_match.group(1).split(', ')
+        return filament_used_g
 
 READ_SIZE = 512 * 1024
 SUPPORTED_SLICERS: List[Type[BaseSlicer]] = [
@@ -1075,7 +1105,9 @@ SUPPORTED_DATA = [
     'filament_weight_total',
     'flush_para',
     'model_info',
-    'default_filament_colour']
+    'default_filament_colour',
+    'filament_used_g',
+    'uuid']
 
 def process_objects(file_path: str, slicer: BaseSlicer, name: str) -> bool:
     try:
@@ -1126,7 +1158,7 @@ def get_slicer(file_path: str) -> Tuple[BaseSlicer, Dict[str, str]]:
     header_data = footer_data = ""
     slicer: Optional[BaseSlicer] = None
     size = os.path.getsize(file_path)
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r',encoding='utf-8', errors='replace') as f:
         # read the default size, which should be enough to
         # identify the slicer
         header_data = f.read(READ_SIZE)
@@ -1165,14 +1197,17 @@ def extract_metadata(
     metadata['uuid'] = str(uuid.uuid4())
     metadata.update(ident)
     for key in SUPPORTED_DATA:
-        func = getattr(slicer, "parse_" + key)
-        result = func()
-        if result is not None:
-            metadata[key] = result
+        if hasattr(slicer, "parse_" + key):
+            func = getattr(slicer, "parse_" + key)
+            result = func()
+            if result is not None:
+                metadata[key] = result
     if metadata.get("filament_type"):
         metadata["model_info"]["MaterialType"] = metadata.get("filament_type")
     if metadata.get("filament_name"):
         metadata["model_info"]["MaterialName"] = metadata.get("filament_name")
+    if not metadata["model_info"].get("multicolor_method"):
+        metadata["model_info"]["multicolor_method"] = 0
     return metadata
 
 def extract_ufp(ufp_path: str, dest_path: str) -> None:

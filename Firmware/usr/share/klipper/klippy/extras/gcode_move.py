@@ -407,9 +407,18 @@ class GCodeMove:
         with open(path, "w") as f:
             f.write(json.dumps(data))
             f.flush()
+    def power_loss_sensor_detected(self):
+        sensor = self.printer.lookup_object('filament_switch_sensor filament_sensor', None)
+        if sensor and sensor.runout_helper.filament_present == 0:
+            # 挤出机断料检测器触发断料
+            completion = self.printer.reactor.register_callback(sensor.runout_helper._runout_event_handler)
+            completion.wait()
+            return False
+        return True
     cmd_CX_RESTORE_GCODE_STATE_help = "Restore a previously saved G-Code state"
     def cmd_CX_RESTORE_GCODE_STATE(self, print_info, file_name_path, XYZET):
         toolhead = self.printer.lookup_object('toolhead')
+        gcode = self.printer.lookup_object('gcode')
         try:
             max_accel = toolhead.get_max_accel()
             requested_accel_to_decel = toolhead.requested_accel_to_decel
@@ -418,7 +427,7 @@ class GCodeMove:
                 "absolute_extrude": True,
                 "file_position": 0,
                 "extrude_factor": 1.0,
-                "speed_factor": 0.016,
+                "speed_factor": 1. / 60.,
                 "homing_position": [0.0, 0.0, 0.0, 0.0],
                 "last_position": [0.0, 0.0, 0.0, 0.0],
                 "speed": 25.0,
@@ -434,7 +443,7 @@ class GCodeMove:
                 "pressure_advance": "",
                 'max_accel':max_accel,
                 'requested_accel_to_decel':requested_accel_to_decel,
-                'square_corner_velocity':square_corner_velocity
+                'square_corner_velocity':square_corner_velocity,
             }
             import os, json
             base_position_e = -1
@@ -474,7 +483,6 @@ class GCodeMove:
             logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE self.last_position[3]:%s, state['last_position'][3]:%s, e_diff:%s, \
                          base_position[3]:%s" % (self.last_position[3], state['last_position'][3], e_diff, self.base_position[3]))
             # Move the toolhead back if requested
-            gcode = self.printer.lookup_object('gcode')
             if state["fan_state"]:
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE fan fan_state:%s" % str(state["fan_state"]))
                 for key in state["fan_state"]:
@@ -482,55 +490,62 @@ class GCodeMove:
                     gcode.run_script_from_command(state["fan_state"].get(key, ""))
                 # gcode.run_script_from_command(state["fan_state"])
             logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE before G28 X Y self.last_position:%s" % str(self.last_position))
-            gcode.run_script_from_command("G28 X Y")
-            logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE after G28 X Y self.last_position:%s" % str(self.last_position))
-            x = self.last_position[0]
-            y = self.last_position[1]
-            z = state['last_position'][2] + self.variable_safe_z + state["variable_z_safe_pause"]
-            logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE self.last_position[2]:%s, state['last_position'][2]:%s, self.variable_safe_z:%s, \
-                state['variable_z_safe_pause']:%s" % (self.last_position[2], state['last_position'][2], self.variable_safe_z, state["variable_z_safe_pause"]))
-            # 获取补偿值，解决断电续打虚层、压层问题
-            offset_value = self.printer.lookup_object('virtual_sdcard').offset_value
-            toolhead = self.printer.lookup_object("toolhead")
-            if self.config.has_section("z_align"):
-                gcode.run_script_from_command("BED_MESH_CLEAR")
-                z_align = self.printer.lookup_object('z_align')
-                gcode = self.printer.lookup_object('gcode')
-                gcmd = gcode.create_gcode_command("", "", {})
-                z_align.cmd_ZDOWN(gcmd)
-                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE BED_MESH_PROFILE LOAD='default'")
-                gcode.run_script_from_command('BED_MESH_PROFILE LOAD="default"')
-                now_pos = toolhead.get_position()
-                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE after cmd_ZDOWN now_pos:%s"%str(now_pos))
-                adjustments_diff = 0
-#                if self.config.has_section("z_tilt"):
-#                    try:
-#                        z_tilt = self.printer.lookup_object('z_tilt')
-#                        adjustments = z_tilt.get_adjustments()
-#                        logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE z_tilt.get_adjustments:%s" % str(adjustments))
-#                        if adjustments:
-#                            negative = False
-#                            if abs(adjustments[0]) < abs(adjustments[1]):
-#                                if adjustments[1] < 0:
-#                                    negative = True
-#                            else:
-#                                if adjustments[0] < 0:
-#                                    negative = True
-#                            adjustments_diff = abs(adjustments[0]-adjustments[1])/2
-#                            adjustments_diff = adjustments_diff*(-1.0) if negative else adjustments_diff
-#                    except Exception as err:
-#                        logging.exception("RESTORE z_tilt.get_adjustments err:%s" % err)
-#                if adjustments_diff != 0 and abs(adjustments_diff)>4.0:
-#                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE adjustments_diff:%s > 3.0" % adjustments_diff)
-#                    adjustments_diff =  adjustments_diff/10
-                cur_z = now_pos[2]+adjustments_diff + offset_value
-                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE cur_z:%s adjustments_diff:%s" % (cur_z, adjustments_diff))
-                toolhead.set_position([now_pos[0], now_pos[1], cur_z, self.last_position[3]], homing_axes=(2,))
+            if self.printer.lookup_object('virtual_sdcard', None) and \
+                self.printer.lookup_object('virtual_sdcard').restore_err is True:
+                logging.info("hys: skip G28 X Y action")
             else:
-                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE BED_MESH_PROFILE LOAD='default'")
-                gcode.run_script_from_command('BED_MESH_PROFILE LOAD="default"')
-                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE toolhead.set_position:%s" % str([x, y, z+offset_value, self.last_position[3]]))
-                toolhead.set_position([x, y, z+offset_value, self.last_position[3]], homing_axes=(2,))
+                gcode.run_script_from_command("G28 X Y")
+            logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE after G28 X Y self.last_position:%s" % str(self.last_position))
+            if self.printer.lookup_object('virtual_sdcard', None) and \
+                self.printer.lookup_object('virtual_sdcard').restore_err is True:
+                logging.info("hys: skip z_down action")
+            else:
+                x = self.last_position[0]
+                y = self.last_position[1]
+                z = state['last_position'][2] + self.variable_safe_z + state["variable_z_safe_pause"]
+                logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE self.last_position[2]:%s, state['last_position'][2]:%s, self.variable_safe_z:%s, \
+                    state['variable_z_safe_pause']:%s" % (self.last_position[2], state['last_position'][2], self.variable_safe_z, state["variable_z_safe_pause"]))
+                # 获取补偿值，解决断电续打虚层、压层问题
+                offset_value = self.printer.lookup_object('virtual_sdcard').offset_value
+                if self.config.has_section("z_align"):
+                    gcode.run_script_from_command("BED_MESH_CLEAR")
+                    z_align = self.printer.lookup_object('z_align')
+                    gcode = self.printer.lookup_object('gcode')
+                    gcmd = gcode.create_gcode_command("", "", {})
+                    z_align.cmd_ZDOWN(gcmd)
+                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE BED_MESH_PROFILE LOAD='default'")
+                    gcode.run_script_from_command('BED_MESH_PROFILE LOAD="default"')
+                    now_pos = toolhead.get_position()
+                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE after cmd_ZDOWN now_pos:%s"%str(now_pos))
+                    adjustments_diff = 0
+    #                if self.config.has_section("z_tilt"):
+    #                    try:
+    #                        z_tilt = self.printer.lookup_object('z_tilt')
+    #                        adjustments = z_tilt.get_adjustments()
+    #                        logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE z_tilt.get_adjustments:%s" % str(adjustments))
+    #                        if adjustments:
+    #                            negative = False
+    #                            if abs(adjustments[0]) < abs(adjustments[1]):
+    #                                if adjustments[1] < 0:
+    #                                    negative = True
+    #                            else:
+    #                                if adjustments[0] < 0:
+    #                                    negative = True
+    #                            adjustments_diff = abs(adjustments[0]-adjustments[1])/2
+    #                            adjustments_diff = adjustments_diff*(-1.0) if negative else adjustments_diff
+    #                    except Exception as err:
+    #                        logging.exception("RESTORE z_tilt.get_adjustments err:%s" % err)
+    #                if adjustments_diff != 0 and abs(adjustments_diff)>4.0:
+    #                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE adjustments_diff:%s > 3.0" % adjustments_diff)
+    #                    adjustments_diff =  adjustments_diff/10
+                    cur_z = now_pos[2]+adjustments_diff + offset_value
+                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE cur_z:%s adjustments_diff:%s" % (cur_z, adjustments_diff))
+                    toolhead.set_position([now_pos[0], now_pos[1], cur_z, self.last_position[3]], homing_axes=(2,))
+                else:
+                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE BED_MESH_PROFILE LOAD='default'")
+                    gcode.run_script_from_command('BED_MESH_PROFILE LOAD="default"')
+                    logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE toolhead.set_position:%s" % str([x, y, z+offset_value, self.last_position[3]]))
+                    toolhead.set_position([x, y, z+offset_value, self.last_position[3]], homing_axes=(2,))
             speed = self.speed
             self.last_position[:3] = state['last_position'][:3]
             box = self.printer.lookup_object("box", None)
@@ -547,18 +562,36 @@ class GCodeMove:
                 if box_enable == 0:
                     logging.info("start box.flush_material")
                     box.flush_material()
+                    if self.power_loss_sensor_detected():
+                        logging.info("hys: filament sensor detected")
+                    else:
+                        logging.info("hys: filament sensor not detected")
+                        return
                 else:
-                    if XYZET["T"]:
+                    if (self.printer.lookup_object("virtual_sdcard").gcode_metadata and \
+                        self.printer.lookup_object("virtual_sdcard").gcode_metadata["metadata"]["model_info"]["multicolor_method"] == 0) and \
+                        XYZET["T"]:
                         logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE :%s" % XYZET["T"])
                         gcode.run_script_from_command("M400")
                         gcode.run_script_from_command(XYZET["T"])
                         gcode.run_script_from_command("M400")
                     else:
                         logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
+                        if self.printer.lookup_object("virtual_sdcard").gcode_metadata and \
+                            self.printer.lookup_object("virtual_sdcard").gcode_metadata["metadata"]["model_info"]["multicolor_method"] == 1 and \
+                            XYZET["M"]:
+                            logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE T_break")
+                            gcode.run_script_from_command("M400")
+                            gcode.run_script_from_command(XYZET["M"])
+                            gcode.run_script_from_command("M400")
                         gcode.run_script_from_command("G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
             else:
                 logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
                 gcode.run_script_from_command("G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))
+            if self.printer.lookup_object('virtual_sdcard', None) and \
+                self.printer.lookup_object('virtual_sdcard').must_pause_work is True:
+                logging.info("hys: pause, return")
+                return
             logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE move_with_transform:%s, speed:%s" % (self.last_position, speed))
             self.move_with_transform(self.last_position, speed)
             logging.info("power_loss cmd_CX_RESTORE_GCODE_STATE G1 X%s Y%s F3000" % (state['last_position'][0], state['last_position'][1]))

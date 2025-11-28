@@ -4,7 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import logging, math, json, os
-from extras.z_align import MOTOR_PROTECT_ERROR
+from extras.z_align import MOTOR_PROTECT_ERROR, MOTOR_ZDOWN_TIMEOUT
 
 HOMING_START_DELAY = 0.001
 ENDSTOP_SAMPLE_TIME = .000015
@@ -43,7 +43,7 @@ class HomingMove:
         if toolhead is None:
             toolhead = printer.lookup_object('toolhead')
 
-        self.prtouch_v3 = printer.lookup_object('prtouch_v3')
+        self.prtouch_v3 = self.printer.lookup_object('prtouch_v3') if self.printer.objects.get('prtouch_v3') else None
         self.prtouch_v3.z_full_movement_flag = False
         self.toolhead = toolhead
         self.stepper_positions = []
@@ -115,6 +115,9 @@ class HomingMove:
         # Wait for endstops to trigger
         trigger_times = {}
         move_end_print_time = self.toolhead.get_last_move_time()
+        suspended_det_status = False
+        if self.prtouch_v3 is not None:
+            suspended_det_status = self.prtouch_v3.get_suspended_det_status()
         for mcu_endstop, name in self.endstops:
             trigger_time = mcu_endstop.home_wait(move_end_print_time)
             if trigger_time > 0.:
@@ -123,7 +126,7 @@ class HomingMove:
                 error = """{"code":"key21", "msg":"Communication timeout during homing %s", "values": ["%s"]}""" % (name, name)
                 logging.info("Communication timeout during homing %s, set MOTOR_STALL_MODE DATA=2"%name)
                 self.handle_force_stop()
-            elif check_triggered and error is None:
+            elif check_triggered and error is None and suspended_det_status is not True:
                 error = """{"code":"key22", "msg":"No trigger on %s after full movement", "values": ["%s"]}""" % (name, name)
                 # z轴误触发后,对x、y电机进行切换为错误码输出模式
                 if name == "z":
@@ -164,6 +167,11 @@ class HomingMove:
             if error is None:
                 error = str(e)
         if error is not None:
+            error_data = json.loads(error.replace("'", '"'))
+            if error_data.get("values") == "probe":
+                gcode = self.printer.lookup_object('gcode')
+                gcode.run_script_from_command("Z_FAIL_PROTECT_HOTBED")
+                logging.info("Homing move end, error:%s" % error)
             raise self.printer.command_error(error)
         return trigpos
     def check_no_movement(self):
@@ -365,7 +373,7 @@ class PrinterHoming:
 
     def cmd_G28(self, gcmd):
         # leave flush area
-        if self.printer.lookup_object('box').has_flushing_sign():
+        if self.printer.lookup_object('box', None) and self.printer.lookup_object('box').has_flushing_sign():
             self.run_gcmd('LEAVE_FLUSH_AREA')
         # Move to origin
         axes = []
@@ -401,7 +409,7 @@ class PrinterHoming:
                             z_align.force_stop_flag = False
                             gcode.respond_info("is_already_zodwn:%s zdown_switch_enable:%s" % (z_align.is_already_zodwn, z_align.zdown_switch_enable))
                             # 检测到没有做过下光电归位时,强制做一次下光电归位
-                            if z_align.is_already_zodwn==False:
+                            if z_align.is_already_zodwn==False and z_align.pin_len != 1:
                                 gcode.run_script_from_command("SET_VELOCITY_LIMIT ACCEL=300")
                                 ret = self.run_G28_two_Z()
                                 if ret == MOTOR_PROTECT_ERROR:
@@ -495,6 +503,8 @@ class PrinterHoming:
             max_z = self.config.getsection('stepper_z').getfloat('position_max')
             # distance_ratio 向上快速运动距离的比例系数
             distance_ratio = self.printer.lookup_object('z_align').distance_ratio
+            if ret == MOTOR_ZDOWN_TIMEOUT:
+                distance_ratio = 0
             self.z_move = max_z*distance_ratio
             self.move_z(speed=30, height=self.z_move) 
             # 检测电机保护错误码是否存在

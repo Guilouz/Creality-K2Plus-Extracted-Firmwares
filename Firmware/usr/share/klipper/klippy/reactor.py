@@ -10,6 +10,11 @@ import mymodule.mymovie as mymovie
 _NOW = 0.
 _NEVER = 9999999999999999.
 
+class ReactorError(Exception):
+    """Temporarily handle it simply."""
+    pass
+
+
 class ReactorTimer:
     def __init__(self, callback, waketime):
         self.callback = callback
@@ -94,6 +99,7 @@ class ReactorMutex:
 class SelectReactor:
     NOW = _NOW
     NEVER = _NEVER
+    error=ReactorError
     def __init__(self, gc_checking=False):
         # Main code
         self._process = False
@@ -158,7 +164,12 @@ class SelectReactor:
             waketime = t.waketime
             if eventtime >= waketime:
                 t.waketime = self.NEVER
-                t.waketime = waketime = t.callback(eventtime)
+                try:
+                    t.waketime = waketime = t.callback(eventtime)
+                except self.error as e:
+                    logging.error(f"[reactor timer traceback]: {e}")
+                except Exception as e:
+                    logging.error(f"[reactor timer traceback]: {e}")
                 if g_dispatch is not self._g_dispatch:
                     self._next_timer = min(self._next_timer, waketime)
                     self._end_greenlet(g_dispatch)
@@ -243,7 +254,7 @@ class SelectReactor:
     # File descriptors
     def register_fd(self, fd, read_callback, write_callback=None):
         file_handler = ReactorFileHandler(fd, read_callback, write_callback)
-        self.set_fd_wake(file_handle, True, False)
+        self.set_fd_wake(file_handler, True, False)
         return file_handler
     def unregister_fd(self, file_handler):
         if file_handler in self._read_fds:
@@ -251,12 +262,12 @@ class SelectReactor:
         if file_handler in self._write_fds:
             self._write_fds.pop(self._write_fds.index(file_handler))
     def set_fd_wake(self, file_handler, is_readable=True, is_writeable=False):
-        if file_hander in self._read_fds:
+        if file_handler in self._read_fds:
             if not is_readable:
                 self._read_fds.pop(self._read_fds.index(file_handler))
         elif is_readable:
             self._read_fds.append(file_handler)
-        if file_hander in self._write_fds:
+        if file_handler in self._write_fds:
             if not is_writeable:
                 self._write_fds.pop(self._write_fds.index(file_handler))
         elif is_writeable:
@@ -375,7 +386,7 @@ class EPollReactor(SelectReactor):
     def register_fd(self, fd, read_callback, write_callback=None):
         file_handler = ReactorFileHandler(fd, read_callback, write_callback)
         fds = self._fds.copy()
-        fds[fd] = callback
+        fds[fd] = read_callback
         self._fds = fds
         self._epoll.register(fd, select.EPOLLIN | select.EPOLLHUP)
         return file_handler

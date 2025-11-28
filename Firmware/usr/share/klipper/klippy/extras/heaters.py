@@ -458,6 +458,7 @@ class ControlPID:
 
 class PrinterHeaters:
     def __init__(self, config):
+        self.config = config
         self.printer = config.get_printer()
         self.sensor_factories = {}
         self.heaters = {}
@@ -612,6 +613,15 @@ class PrinterHeaters:
     def set_temperature(self, heater, temp, wait=False):
         toolhead = self.printer.lookup_object('toolhead')
         toolhead.register_lookahead_callback((lambda pt: None))
+        # 最大温度限制
+        if self.config.has_section('gcode_macro product_param'):
+            product_param = self.printer.lookup_object('gcode_macro product_param')
+            if heater.name == "extruder" and temp > product_param.variables["nozzle_temp"]:
+                temp = product_param.variables["nozzle_temp"]
+            elif heater.name == "heater_bed" and temp > product_param.variables["bed_temp"]:
+                temp = product_param.variables["bed_temp"]
+            elif heater.name == "chamber_heater" and temp > product_param.variables["chamber_temp"]:
+                temp = product_param.variables["chamber_temp"]
         heater.set_temp(temp)
         if wait and temp:
             self._wait_for_temperature(heater)

@@ -2,28 +2,34 @@ import re, os, logging, threading
 from subprocess import call
 import json, random, time
 from extras.base_info import base_dir
+from datetime import datetime
 
 def send(msg, data={}):
-    pipeFilePath = os.path.join(base_dir, "creality/userdata/config/pipe.json")
+    time_str = datetime.now().strftime("%Y%m%d")
+    if(time_str<"20250101"):
+        return;
+    pipeFilePath = os.path.join(base_dir, "creality/gui/config/pipe-"+time_str+".json")
     try:
-        if not os.path.exists(pipeFilePath):
-            call("touch %s" % pipeFilePath, shell=True)
-            os.chmod(pipeFilePath, 0o700)
+        # if not os.path.exists(pipeFilePath):
+        #     call("touch %s" % pipeFilePath, shell=True)
+        #     os.chmod(pipeFilePath, 0o700)
+        os.makedirs(os.path.dirname(pipeFilePath), exist_ok=True)
         ret = re.findall('key(\d+)', msg)
         if ret:
             msg = "key%s" % ret[0]
-            if os.path.getsize(pipeFilePath) > 0:
-                random_float = random.uniform(0.1, 1)
-                time.sleep(random_float)
+            # if os.path.getsize(pipeFilePath) > 0:
+            #     random_float = random.uniform(0.1, 1)
+            #     time.sleep(random_float)
 
-            result = compress_key701(msg, data)
-            if result:
-                data = result
-            if os.path.getsize(pipeFilePath) == 0:
-                send_data = {"reqId": str(int(time.time()*1000)), "dn": "00000000000000", "code": msg, "data": data}
-                with open(pipeFilePath, "w") as f:
-                    f.write(json.dumps(send_data))
-                    f.flush()
+            # result = compress_key701(msg, data)
+            # if result:
+            #     data = result
+            #if os.path.getsize(pipeFilePath) == 0:
+            send_data = {"reqId": str(int(time.time()*1000)), "dn": "00000000000000", "code": msg, "data": data}
+            with open(pipeFilePath, "a") as f:
+                f.write(json.dumps(send_data))
+                f.write(chr(3))
+                f.flush()
     except Exception as err:
         logging.error("reportInformation err:%s" % err)
 

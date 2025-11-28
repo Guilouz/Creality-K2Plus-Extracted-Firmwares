@@ -1,0 +1,13 @@
+Package: minizip
+Version: 4.0.10-2
+Depends: libc, librt, libpthread, zlib
+Source: /opt/wuhui/code/creality/Pre-release/kl_C4408_V2_F008/openwrt/package/feeds/libs/minizip
+SourceName: minizip
+License: Zlib
+LicenseFiles: LICENSE
+Section: libs
+SourceDateEpoch: 1755584749
+Maintainer: David Woodhouse <dwmw2@infradead.org>
+Architecture: arm_cortex-a7_neon
+Installed-Size: 32388
+Description:  minizip is a zip manipulation library written in C that is supported on Windows, macOS, and Linux

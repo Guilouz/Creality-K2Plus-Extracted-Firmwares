@@ -7,12 +7,12 @@ import os, json, logging
 from .base_info import base_dir
 class PrintStats:
     def __init__(self, config):
-        printer = config.get_printer()
-        self.gcode_move = printer.load_object(config, 'gcode_move')
-        self.reactor = printer.get_reactor()
+        self.printer = config.get_printer()
+        self.gcode_move = self.printer.load_object(config, 'gcode_move')
+        self.reactor = self.printer.get_reactor()
         self.reset()
         # Register commands
-        self.gcode = printer.lookup_object('gcode')
+        self.gcode = self.printer.lookup_object('gcode')
         self.gcode.register_command(
             "SET_PRINT_STATS_INFO", self.cmd_SET_PRINT_STATS_INFO,
             desc=self.cmd_SET_PRINT_STATS_INFO_help)
@@ -68,6 +68,9 @@ class PrintStats:
             pause_duration = curtime - self.last_pause_time
             self.prev_pause_duration += pause_duration
             self.last_pause_time = None
+        # clean box change color count
+        self.printer.send_event("box:clear_box_color_count")
+        logging.info("box:clear_box_color_count start")
         self.last_epos = gc_status['position'].e
         self.state = "printing"
         self.error_message = ""
@@ -84,6 +87,12 @@ class PrintStats:
     def note_error(self, message):
         self._note_finish("error", message)
     def note_cancel(self):
+        curtime = self.reactor.monotonic()
+        if self.last_pause_time is not None:
+            # Update pause time duration
+            pause_duration = curtime - self.last_pause_time
+            self.prev_pause_duration += pause_duration
+            self.last_pause_time = None
         self._note_finish("cancelled")
     def _note_finish(self, state, error_message = ""):
         if self.print_start_time is None:

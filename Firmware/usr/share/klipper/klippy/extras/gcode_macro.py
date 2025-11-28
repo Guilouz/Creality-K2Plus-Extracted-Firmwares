@@ -71,6 +71,7 @@ class TemplateWrapper:
             )
             logging.exception(msg)
             raise self.gcode.error(msg)
+            # return self.gcode.warning(msg)
     def run_gcode_from_command(self, context=None):
         self.gcode.run_script_from_command(self.render(context))
 
@@ -206,7 +207,8 @@ class GCodeMacro:
     def cmd(self, gcmd):
         if self.in_script:
             # raise gcmd.error("Macro %s called recursively" % (self.alias,))
-            raise gcmd.error("""{"code":"key172", "msg": "Macro %s called recursively", "values": ["%s"]}""" % (self.alias, self.alias))
+            #raise gcmd.error("""{"code":"key172", "msg": "Macro %s called recursively", "values": ["%s"]}""" % (self.alias, self.alias))
+            return gcmd.warning("""{"code":"key172", "msg": "Macro %s called recursively", "values": ["%s"]}""" % (self.alias, self.alias))
         kwparams = dict(self.variables)
         kwparams.update(self.template.create_template_context())
         kwparams['params'] = gcmd.get_command_parameters()

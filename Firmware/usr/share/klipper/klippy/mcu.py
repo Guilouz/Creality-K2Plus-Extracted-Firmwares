@@ -647,7 +647,17 @@ class MCU:
             gcode = self._printer.lookup_object('gcode')
             code_key_string = ""
             msg = "adc out of range"
-            if self._serial.adc_out_of_range_info["mcu0"]:
+            if (chamber_temp_obj and -20 < chamber_temp_obj.last_temp < 500) and (mcu_temp_obj and -20 < mcu_temp_obj.last_temp < 500):
+                self._serial.adc_out_of_range_info["mcu0"] = False
+                self._serial.adc_out_of_range_info["mcu0_isReport"] = False
+            if extruder_obj and -20 < extruder_obj.heater.smoothed_temp < 500:
+                self._serial.adc_out_of_range_info["noz0"] = False
+                self._serial.adc_out_of_range_info["noz0_isReport"] = False
+            if heater_bed_obj and -20 < heater_bed_obj.heater.smoothed_temp < 500:
+                self._serial.adc_out_of_range_info["bed0"] = False
+                self._serial.adc_out_of_range_info["bed0_isReport"] = False
+
+            if self._serial.adc_out_of_range_info["bed0"]:
                 if heater_bed_obj and heater_bed_obj.heater.smoothed_temp < 0:
                     msg += " heater_bed_temp:%s" % round(heater_bed_obj.heater.smoothed_temp, 2)
                     code_key_string = "key510"
@@ -656,9 +666,9 @@ class MCU:
                     code_key_string = "key516"
                 if code_key_string and not self._serial.adc_out_of_range_info["bed0_isReport"]:
                     # self._serial.adc_out_of_range_info["bed0_isReport"] = True
-                    gcode.run_script("TURN_OFF_HEATERS")
-                    gcode._respond_error("""{"code": "%s", "msg":"bed %s", "values": []}""" % (code_key_string, self._name + " " + msg))
-                code_key_string = ""
+                    # gcode._respond_error("""{"code": "%s", "msg":"bed %s", "values": []}""" % (code_key_string, self._name + " " + msg))
+                    raise self._reactor.error("""{"code": "%s", "msg":"bed %s", "values": []}""" % (code_key_string, self._name + " " + msg))
+            if self._serial.adc_out_of_range_info["mcu0"]:
                 if chamber_temp_obj and chamber_temp_obj.last_temp < 0:
                     msg += " chamber_temp:%s" % round(chamber_temp_obj.last_temp, 2)
                     code_key_string = "key511"
@@ -673,10 +683,8 @@ class MCU:
                     code_key_string = "key518"
                 if code_key_string and not self._serial.adc_out_of_range_info["mcu0_isReport"]:
                     # self._serial.adc_out_of_range_info["mcu0_isReport"] = True
-                    gcode.run_script("TURN_OFF_HEATERS")
-                    gcode._respond_error("""{"code": "%s", "msg":"mcu %s", "values": []}""" % (code_key_string, self._name + " " + msg))
-                code_key_string = ""
-
+                    # gcode._respond_error("""{"code": "%s", "msg":"mcu %s", "values": []}""" % (code_key_string, self._name + " " + msg))
+                    raise self._reactor.error("""{"code": "%s", "msg":"mcu %s", "values": []}""" % (code_key_string, self._name + " " + msg))
             if self._serial.adc_out_of_range_info["noz0"]:
                 if extruder_obj and extruder_obj.heater.smoothed_temp < 0:
                     msg += " extruder_temp:%s" % round(extruder_obj.heater.smoothed_temp, 2)
@@ -686,19 +694,13 @@ class MCU:
                     code_key_string = "key515"
                 if code_key_string and not self._serial.adc_out_of_range_info["noz0_isReport"]:
                     # self._serial.adc_out_of_range_info["noz0_isReport"] = True
-                    gcode.run_script("TURN_OFF_HEATERS")
-                    gcode._respond_error("""{"code": "%s", "msg":"nozzle %s", "values": []}""" % (code_key_string, self._name + " " + msg))
-                code_key_string = ""
-
-            if (chamber_temp_obj and -20 < chamber_temp_obj.last_temp < 500) and (mcu_temp_obj and -20 < mcu_temp_obj.last_temp < 500):
-                self._serial.adc_out_of_range_info["mcu0"] = False
-                self._serial.adc_out_of_range_info["mcu0_isReport"] = False
-            if extruder_obj and -20 < extruder_obj.heater.smoothed_temp < 500:
-                self._serial.adc_out_of_range_info["noz0"] = False
-                self._serial.adc_out_of_range_info["noz0_isReport"] = False
-            if heater_bed_obj and -20 < heater_bed_obj.heater.smoothed_temp < 500:
-                self._serial.adc_out_of_range_info["bed0"] = False
-                self._serial.adc_out_of_range_info["bed0_isReport"] = False
+                    # gcode._respond_error("""{"code": "%s", "msg":"nozzle %s", "values": []}""" % (code_key_string, self._name + " " + msg))
+                    raise self._reactor.error("""{"code": "%s", "msg":"nozzle %s", "values": []}""" % (code_key_string, self._name + " " + msg))
+        except self._reactor.error as e:
+            code_key_string = ""
+            gcode.run_script("TURN_OFF_HEATERS")
+            # raise gcode.error(str(e))  # TODO: reactor.error暂时不修改, 不能在reactor层捕获
+            gcode._respond_error(str(e))
         except Exception as err:
             logging.error(err)
         return eventtime + 3.0
@@ -852,7 +854,9 @@ class MCU:
             raise error("""{"code": "key300", "msg": "MCU '%s' error during config: %s", "values":["%s", "%s"]}""" % (
                 self._name, self._shutdown_msg, self._name, self._shutdown_msg))
         if config_params['is_shutdown']:
-            raise error("""{"code": "key298", "msg": "Can not update MCU %s config as it is shutdown", "values":["%s"]}""" % (
+            # raise error("""{"code": "key298", "msg": "Can not update MCU %s config as it is shutdown", "values":["%s"]}""" % (
+            #     self._name, self._name))
+            raise self._printer.command_error("""!{"code": "key298", "msg": "Can not update MCU %s config as it is shutdown", "values":["%s"]}""" % (
                 self._name, self._name))
         return config_params
     def _log_info(self):
