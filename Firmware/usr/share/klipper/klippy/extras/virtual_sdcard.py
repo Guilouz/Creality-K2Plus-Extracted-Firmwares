@@ -727,12 +727,16 @@ class VirtualSD:
             except UnicodeDecodeError as err:
                 logging.error("UnicodeDecodeError err:%s" % str(err))
                 cur_pos -= 1
-                if cur_pos < 0: break
+                if cur_pos < 0:
+                    f.seek(0)
+                    break
                 f.seek(cur_pos)
                 continue
             buf = b + buf
             cur_pos -= 1
-            if cur_pos < 0: break
+            if cur_pos < 0:
+                f.seek(0)
+                break
             f.seek(cur_pos)
             if b.startswith("\n") or b.startswith("\r"):
                 buf = '\n'
@@ -770,6 +774,7 @@ class VirtualSD:
         # Tn能拿到值的话 证明是多色文件 需要遍历到T值再退出循环
         Tn = self.check_Tn(file_path)
         result = {"X": 0, "Y": 0, "Z": 0, "E": 0, "T": ""}
+        save_flag = {"X": 0, "Y": 0, "Z": 0, "E": 0}
         if self.gcode_metadata["metadata"]["model_info"]["multicolor_method"] == 1:
             result["M"] = ""
         try:
@@ -791,20 +796,24 @@ class VirtualSD:
                                     result["E"] = float(("0"+ret.strip(" ")))
                                 else:
                                     result["E"] = float(ret.strip(" "))
-                    if not result["X"] and not result["Y"] and "X" in line and "Y" in line:
+                                save_flag["E"] = 1
+                    if not save_flag["X"] and not save_flag["Y"] and "X" in line and "Y" in line:
                         for obj in line_list:
                             if obj.startswith("X"):
                                 logging.info("power_loss getXYZET X:%s" % obj)
                                 result["X"] = float(obj.split("\r")[0][1:])
+                                save_flag["X"] = 1
                             if obj.startswith("Y"):
                                 logging.info("power_loss getXYZET Y:%s" % obj)
                                 result["Y"] = float(obj.split("\r")[0][1:])
-                    if not result["Z"] and "Z" in line:
+                                save_flag["Y"] = 1
+                    if not save_flag["Z"] and "Z" in line:
                         for obj in line_list:
                             if obj.startswith("Z"):
                                 logging.info("power_loss getXYZET Z:%s" % obj)
                                 result["Z"] = float(obj.split("\r")[0][1:])
-                    if result["X"] and result["Y"] and result["Z"] and result["E"]:
+                                save_flag["Z"] = 1
+                    if save_flag["X"] and save_flag["Y"] and save_flag["Z"] and save_flag["E"]:
                         break
                     self.reactor.pause(self.reactor.monotonic() + .001)
             if Tn >= 1:

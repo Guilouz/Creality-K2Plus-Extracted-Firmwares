@@ -94,7 +94,6 @@
 /etc/sysConfig/UIResource/K1/zoffset_Sub_Disable.png
 /etc/sysConfig/UIResource/K1/objectStateCancle.png
 /etc/sysConfig/UIResource/K1/objectStatePrinting.png
-/usr/share/ca.crt
 /etc/sysConfig/UIResource/K1/nuzzle.png
 /etc/sysConfig/UIResource/K1/multicolor_box_k2.png
 /etc/sysConfig/UIResource/K1_Max/img_polygon_25.png
@@ -166,6 +165,7 @@
 /etc/sysConfig/UIResource/K1/img_humidity_height_rangle.png
 /etc/sysConfig/UIResource/K1/img_test_tip_k2plus_machine.png
 /etc/sysConfig/UIResource/K1/img_logo_animation.gif
+/usr/share/cert/ca.crt
 /etc/sysConfig/UIResource/K1_Max/K2Plus_Checktips.png
 /etc/sysConfig/UIResource/K1_Max/K1Max_Checktips.png
 /etc/sysConfig/UIResource/K1/turn_right.png
@@ -183,6 +183,7 @@
 /etc/sysConfig/UIResource/K1/hotendicon.png
 /etc/sysConfig/UIResource/K1/auto_refill_next_page.png
 /usr/bin/app-server
+/usr/share/cert/server.crt
 /etc/sysConfig/UIResource/K1/img_fila_f028.png
 /etc/sysConfig/UIResource/K1/belt_init.png
 /etc/sysConfig/UIResource/K1/img_rfid_flag.png
@@ -193,7 +194,6 @@
 /etc/sysConfig/UIResource/K1/img_cfs_hub_light.png
 /etc/sysConfig/UIResource/K1/nozzle_fila_full.png
 /etc/sysConfig/UIResource/K1_Max/K2Pro_Checktips.png
-/usr/share/server.crt
 /etc/sysConfig/UIResource/K1/img_cfs_humidity_height.png
 /etc/sysConfig/UIResource/K1/img_k2pro_machine.png
 /etc/sysConfig/UIResource/K1/img_f028_boot_machine.png
@@ -215,12 +215,12 @@
 /etc/sysConfig/UIResource/K1/img_f028_machine.png
 /etc/sysConfig/UIResource/K1/remainingtimeicon.png
 /etc/sysConfig/defData/laser_test_line.gcode
+/usr/share/cert/server.key
 /etc/sysConfig/UIResource/K1/selfchecking_0.png
 /etc/sysConfig/UIResource/K1/fan_schematic_k2pro_shortword.png
 /etc/sysConfig/UIResource/K1/wifi_state_4.png
 /etc/sysConfig/UIResource/K1/axiscoolpagefan.png
 /etc/sysConfig/UIResource/K1/img_fila_k2.png
-/usr/share/server.key
 /etc/sysConfig/UIResource/K1/objectStateNormal.png
 /etc/sysConfig/UIResource/K1/img_test_tip_k2pro_machine.png
 /etc/sysConfig/UIResource/K1/img_k2_machine.png

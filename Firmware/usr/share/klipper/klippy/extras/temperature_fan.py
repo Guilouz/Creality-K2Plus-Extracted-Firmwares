@@ -14,6 +14,7 @@ class TemperatureFan:
     def __init__(self, config):
         self.name = config.get_name().split()[1]
         self.printer = config.get_printer()
+        self.gcode = self.printer.lookup_object('gcode')
         self.fan = fan.Fan(config, default_shutdown_speed=1.)
         self.min_temp = config.getfloat('min_temp', minval=KELVIN_TO_CELSIUS)
         self.max_temp = config.getfloat('max_temp', above=self.min_temp)
@@ -50,7 +51,11 @@ class TemperatureFan:
             self.cmd_SET_TEMPERATURE_FAN_SWITCH,
             desc=self.cmd_SET_TEMPERATURE_FAN_SWITCH_help)
         self.temperature_fan_switch = 0
-
+        self.printer.register_event_handler('klippy:ready',self._cancel_control_fan)
+        
+    def _cancel_control_fan(self):
+        self.gcode.run_script_from_command("CANCEL_CHAMBER_FAN_SWITCH")
+    
     def set_speed(self, read_time, value):
         if value <= 0.:
             value = 0.

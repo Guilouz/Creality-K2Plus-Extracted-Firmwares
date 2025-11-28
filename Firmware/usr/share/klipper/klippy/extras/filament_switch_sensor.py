@@ -51,7 +51,7 @@ class RunoutHelper:
             pause_prefix = "PAUSE\n"
             self.printer.get_reactor().pause(eventtime + self.pause_delay)
         if self.printer.lookup_object('box', None) is None or self.printer.lookup_object('box').box_action.box_state.Tn_data["enable"] == 0:
-            self.gcode.respond_info("""!! {"code":"key358", "msg":"filament switch sensor runout", "values": []}""")
+            self.gcode._respond_warning("""!{"code":"key358", "msg":"filament switch sensor runout", "values": []}""")  # !warning --> 1002
         self._exec_gcode(pause_prefix, self.runout_gcode)
     def _insert_event_handler(self, eventtime):
         self._exec_gcode("", self.insert_gcode)
